@@ -4,6 +4,8 @@ Real-time WebGL2 & GLSL light/dark theme transitions powered by full-document GP
 
 Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **6 shader transition modes**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
 
+Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
+
 ---
 
 ## Transition Modes
