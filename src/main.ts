@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import { inkParams, isTransitionMode, TRANSITION_MODES } from './gl/params';
 import { mountPage } from './page/mount';
 import { startAutoMode } from './ui/autoMode';
 import { DemoPanel, loadSettings } from './ui/demoPanel';
@@ -21,6 +22,10 @@ document.body.append(canvas);
 
 const params = new URLSearchParams(location.search);
 const settings = loadSettings();
+const modeParam = params.get('mode');
+if (modeParam && isTransitionMode(modeParam)) {
+  inkParams.mode = modeParam;
+}
 
 // ?gl=0 forces the CSS fallback (what browsers without WebGL2 get).
 const ink = new InkTransition(canvas, toggle, { webgl: params.get('gl') !== '0' });
@@ -28,6 +33,7 @@ const ink = new InkTransition(canvas, toggle, { webgl: params.get('gl') !== '0' 
 let showMarker = settings.showMarker;
 const panel = new DemoPanel(ink, {
   showMarker,
+  hideDock: params.get('clean') === '1',
   onMarkerChange: (show) => {
     showMarker = show;
   },
@@ -59,6 +65,19 @@ window.addEventListener('keydown', (e) => {
     case 'r':
       ink.replay();
       break;
+    case 'm':
+      panel.cycleMode();
+      break;
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6': {
+      const mode = TRANSITION_MODES[Number(e.key) - 1];
+      if (mode) panel.setMode(mode.id);
+      break;
+    }
     default:
       return;
   }

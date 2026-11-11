@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { capturePage, layoutKey, renderScale } from '../capture/capture';
-import { inkParams } from '../gl/params';
+import { inkParams, type TransitionMode } from '../gl/params';
 import { InkRenderer, type InkFrame, type InkSource } from '../gl/renderer';
 import { applyTheme, getTheme, otherTheme, type Theme } from './theme';
 import { ThemeIcon } from './themeIcon';
@@ -35,7 +35,7 @@ export interface ClickRecord {
 
 const REPLAY_HOLD_MS = 400;
 
-type ActiveFrame = Omit<InkFrame, 'progress' | 'radius' | 'time' | 'cleanup'>;
+type ActiveFrame = Omit<InkFrame, 'progress' | 'linear' | 'radius' | 'time' | 'cleanup'>;
 
 /**
  * Orchestrates the theme transition:
@@ -106,6 +106,14 @@ export class InkTransition {
     return this.last;
   }
 
+  get mode(): TransitionMode {
+    return inkParams.mode;
+  }
+
+  setMode(mode: TransitionMode): void {
+    inkParams.mode = mode;
+  }
+
   /**
    * Toggle the theme, spreading from `point` (viewport CSS px) or from the toggle button.
    * `seed` reproduces a previous spread exactly.
@@ -148,7 +156,7 @@ export class InkTransition {
     const maxDist = farthestCorner(center);
     const frameSeed = seed ?? randomSeed();
     this.last = { point: center, seed: frameSeed, from: otherTheme(to) };
-    this.frame = { from, to, center, maxDist, seed: frameSeed };
+    this.frame = { mode: inkParams.mode, from, to, center, maxDist, seed: frameSeed };
     this.state.progress = 0;
     this.state.time = 0;
 
@@ -219,7 +227,7 @@ export class InkTransition {
     // final frame is exactly the "to" snapshot before the fade (measured residual is 0).
     const cleanup =
       ramp ** SPREAD.cleanupPow * maxDist * SPREAD.cleanupReach + Math.max(0, (linear - 0.97) / 0.03) * maxDist;
-    return { ...this.frame, progress, time, radius: progress * maxDist * SPREAD.growth, cleanup };
+    return { ...this.frame, progress, linear, time, radius: progress * maxDist * SPREAD.growth, cleanup };
   }
 
   private draw(): void {

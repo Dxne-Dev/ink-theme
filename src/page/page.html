@@ -1,16 +1,16 @@
-<a class="skip-link" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">Aller au contenu</a>
 
 <header class="site-header">
   <div class="container nav">
-    <a class="wordmark" href="#" aria-label="Your Name, home">
+    <a class="wordmark" href="#" aria-label="Dxne-Dev, accueil">
       <span class="wordmark__dot" aria-hidden="true"></span>
-      Codemure
+      Dxne-Dev
     </a>
 
-    <nav class="nav__links" aria-label="Primary">
-      <a href="#work" aria-current="page">Work</a>
-      <a href="#about">About</a>
-      <a href="#journal">Journal</a>
+    <nav class="nav__links" aria-label="Navigation principale">
+      <a href="#work" aria-current="page">Projets</a>
+      <a href="#about">Stack</a>
+      <a href="#journal">Labo</a>
       <a href="#contact">Contact</a>
     </nav>
 
@@ -18,9 +18,9 @@
       class="theme-toggle"
       id="theme-toggle"
       type="button"
-      aria-label="Dark mode"
+      aria-label="Mode sombre"
       aria-pressed="false"
-      title="Toggle dark mode (T)"
+      title="Basculer le thème (T)"
       data-ink-live
     >
       <svg class="theme-toggle__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -45,78 +45,95 @@
   <section class="hero container" aria-labelledby="hero-title">
     <p class="eyebrow">
       <span class="status-dot" aria-hidden="true"></span>
-      Independent product designer · Lisbon · Booking spring 2027
+      Développeur Web &amp; Créatif · Dxne-Dev · Disponible pour de nouveaux projets
     </p>
 
     <h1 class="hero__title" id="hero-title">
-      Designing quiet interfaces<br />
-      for <em>loud</em> ideas.
+      Coder des interfaces<br />
+      fluides et <em>précises</em>.
     </h1>
 
     <p class="hero__bio">
-      I help early-stage teams turn tangled products into calm, legible tools — from first
-      sketch to shipped design system. Previously design lead at a Series B fintech and a small type foundry.
+      Je développe des applications web rapides, des micro-interactions GPU et des systèmes
+      d’interface sur mesure — du prototype shader WebGL2 jusqu’au code prêt pour la production.
     </p>
 
     <div class="hero__actions">
       <a class="button button--primary" href="#work">
-        See selected work
+        Voir les projets
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path d="M3 8h10M9 4l4 4-4 4" />
         </svg>
       </a>
-      <a class="text-link" href="mailto:hello@yourname.studio">hello@codemure.com</a>
+      <a
+        class="text-link github-link"
+        id="project-repo-link"
+        href="https://github.com/Dxne-Dev/ink-theme"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <svg class="github-link__icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+        </svg>
+        <span>Voir le projet sur GitHub</span>
+      </a>
     </div>
   </section>
 
   <section class="work container" id="work" aria-labelledby="work-title">
     <div class="section-head">
-      <h2 class="section-head__title" id="work-title">Selected work</h2>
-      <span class="section-head__meta">2023 — 2026</span>
+      <h2 class="section-head__title" id="work-title">Réalisations &amp; démos</h2>
+      <span class="section-head__meta">2024 — 2026</span>
     </div>
 
     <ul class="cards" role="list">
       <li>
-        <a class="card" href="#tidal">
-          <div class="card__thumb card__thumb--tidal" aria-hidden="true">
-            <span class="tidal__sun"></span>
-            <span class="tidal__wave tidal__wave--1"></span>
-            <span class="tidal__wave tidal__wave--2"></span>
-            <span class="tidal__wave tidal__wave--3"></span>
+        <a class="card" href="https://github.com/Dxne-Dev/ink-theme" target="_blank" rel="noopener noreferrer">
+          <div class="card__thumb card__thumb--shader" aria-hidden="true">
+            <span class="shader__ring shader__ring--outer"></span>
+            <span class="shader__ring shader__ring--inner"></span>
+            <span class="shader__drop"></span>
+            <span class="shader__caption">GLSL · 6 MODES</span>
           </div>
           <div class="card__body">
-            <p class="card__meta">Fintech · iOS &amp; Web · 2026</p>
-            <h3 class="card__title">Tidal — a calmer way to bank</h3>
-            <p class="card__desc">Rebuilt onboarding and the money-movement flows; support tickets fell 38%.</p>
+            <p class="card__meta">WebGL2 · GLSL &amp; TypeScript · 2026</p>
+            <h3 class="card__title">Transitions Thème WebGL2</h3>
+            <p class="card__desc">Six shaders temps réel (encre, onde, braise, trame, éclipse, cristal) pour basculer entre clair et sombre.</p>
           </div>
         </a>
       </li>
       <li>
-        <a class="card" href="#field-notes">
-          <div class="card__thumb card__thumb--field" aria-hidden="true">
-            <span class="field__glyph">Ff</span>
-            <span class="field__rule"></span>
-            <span class="field__caption">Field Notes · Vol. 04</span>
+        <a class="card" href="#monolithe">
+          <div class="card__thumb card__thumb--terminal" aria-hidden="true">
+            <span class="terminal__window">
+              <span class="terminal__bar">
+                <span></span><span></span><span></span>
+              </span>
+              <span class="terminal__line terminal__line--accent"></span>
+              <span class="terminal__line terminal__line--long"></span>
+              <span class="terminal__line terminal__line--mid"></span>
+              <span class="terminal__line terminal__line--short"></span>
+            </span>
           </div>
           <div class="card__body">
-            <p class="card__meta">Editorial · Type system · 2025</p>
-            <h3 class="card__title">Field Notes Quarterly</h3>
-            <p class="card__desc">A modular reading experience and variable-type system for a print-first magazine.</p>
+            <p class="card__meta">Architecture · Design System · 2025</p>
+            <h3 class="card__title">Monolithe UI — Kit typographique</h3>
+            <p class="card__desc">Bibliothèque de composants accessibles sans dépendances, pensée pour une latence nulle et un rendu net.</p>
           </div>
         </a>
       </li>
       <li>
-        <a class="card" href="#halo">
-          <div class="card__thumb card__thumb--halo" aria-hidden="true">
-            <span class="halo__ring halo__ring--1"></span>
-            <span class="halo__ring halo__ring--2"></span>
-            <span class="halo__ring halo__ring--3"></span>
-            <span class="halo__core"></span>
+        <a class="card" href="#flux">
+          <div class="card__thumb card__thumb--nodes" aria-hidden="true">
+            <span class="nodes__link"></span>
+            <span class="nodes__node nodes__node--left"></span>
+            <span class="nodes__node nodes__node--core"></span>
+            <span class="nodes__node nodes__node--right"></span>
           </div>
           <div class="card__body">
-            <p class="card__meta">Hardware · Companion app · 2024</p>
-            <h3 class="card__title">Halo Home Controller</h3>
-            <p class="card__desc">Ambient controls for a smart-lighting puck, from industrial sketches to firmware UI.</p>
+            <p class="card__meta">Full-Stack · Temps réel · 2024</p>
+            <h3 class="card__title">Flux Studio — Éditeur nodal</h3>
+            <p class="card__desc">Pipeline visuel temps réel synchronisant état client, WebSockets et rendu GPU à 60 images par seconde.</p>
           </div>
         </a>
       </li>
@@ -126,16 +143,19 @@
 
 <footer class="site-footer" id="contact">
   <div class="container footer">
-    <p class="footer__cta">Have something worth making quieter? <a class="text-link" href="mailto:hello@yourname.studio">Let’s talk.</a></p>
+    <p class="footer__cta">
+      Explorer le code source ?
+      <a class="text-link" id="footer-repo-link" href="https://github.com/Dxne-Dev/ink-theme" target="_blank" rel="noopener noreferrer">Dépôt GitHub du projet.</a>
+    </p>
     <div class="footer__row">
-      <span>© 2026 Codemure</span>
+      <span>© 2026 Dxne-Dev</span>
       <ul class="footer__social" role="list">
-        <li><a href="#">Read.cv</a></li>
-        <li><a href="#">Dribbble</a></li>
+        <li><a id="social-github-link" href="https://github.com/Dxne-Dev/ink-theme" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+        <li><a href="#">X / Twitter</a></li>
         <li><a href="#">LinkedIn</a></li>
-        <li><a href="#">GitHub</a></li>
+        <li><a href="#">CodePen</a></li>
       </ul>
-      <span class="footer__local">Lisbon · <span id="local-time">--:--</span></span>
+      <span class="footer__local">France · <span id="local-time">--:--</span></span>
     </div>
   </div>
 </footer>

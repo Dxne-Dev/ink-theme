@@ -2,8 +2,8 @@ import type { Snapshot } from '../capture/capture';
 import type { Theme } from '../ui/theme';
 import { createProgram, type Program } from './program';
 import { createNoiseTexture } from './noiseTexture';
-import { inkParams, RIM_COLOR } from './params';
-import { FULLSCREEN_VERT, INK_FRAG } from './shaders';
+import { inkParams, RIM_COLOR, TRANSITION_MODES, type TransitionMode } from './params';
+import { buildFragmentShader, FULLSCREEN_VERT } from './shaders';
 
 interface ThemeTexture {
   texture: WebGLTexture;
@@ -28,12 +28,15 @@ interface CompositeTexture {
 export type InkSource = Theme | 'composite';
 
 export interface InkFrame {
+  mode: TransitionMode;
   from: InkSource;
   to: Theme;
   /** Click point, CSS px relative to the viewport. */
   center: { x: number; y: number };
   /** Eased 0..1. */
   progress: number;
+  /** Linear time progress 0..1. */
+  linear: number;
   /** Base radius, CSS px. */
   radius: number;
   /** Uniform extra reach used to finish off lagging corners, CSS px. */
@@ -65,7 +68,7 @@ export class InkRenderer {
   readonly maxTextureSize: number;
 
   private gl: WebGL2RenderingContext;
-  private program!: Program;
+  private programs = new Map<TransitionMode, Program>();
   private vao!: WebGLVertexArrayObject;
   private noise!: WebGLTexture;
   private textures = new Map<Theme, ThemeTexture>();
@@ -103,7 +106,17 @@ export class InkRenderer {
 
   private init(): void {
     const gl = this.gl;
-    this.program = createProgram(gl, FULLSCREEN_VERT, INK_FRAG);
+    this.programs.clear();
+    for (const m of TRANSITION_MODES) {
+      try {
+        this.programs.set(m.id, createProgram(gl, FULLSCREEN_VERT, buildFragmentShader(m.id)));
+      } catch (err) {
+        console.error(`[ink] failed to compile shader "${m.id}"`, err);
+      }
+    }
+    if (this.programs.size === 0) {
+      throw new Error('No transition shaders compiled');
+    }
     const vao = gl.createVertexArray();
     if (!vao) throw new Error('createVertexArray failed');
     this.vao = vao;
@@ -261,8 +274,11 @@ export class InkRenderer {
     const to = this.sampler(frame.to);
     if (!from || !to) return false;
 
+    const prog = this.programs.get(frame.mode);
+    if (!prog) return false;
+
     const gl = this.gl;
-    const { program, uniform } = this.program;
+    const { program, uniform } = prog;
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.useProgram(program);
     gl.bindVertexArray(this.vao);
@@ -286,6 +302,8 @@ export class InkRenderer {
     gl.uniform2f(uniform('uCenter'), frame.center.x, frame.center.y);
     gl.uniform1f(uniform('uRadius'), frame.radius);
     gl.uniform1f(uniform('uCleanup'), frame.cleanup);
+    gl.uniform1f(uniform('uMaxDist'), frame.maxDist);
+    gl.uniform1f(uniform('uLinear'), frame.linear);
     gl.uniform1f(uniform('uTime'), frame.time);
     gl.uniform1f(uniform('uRef'), Math.max(this.canvas.width, this.canvas.height) / this.canvasScale);
     gl.uniform2f(uniform('uSeed'), frame.seed.x, frame.seed.y);
@@ -298,6 +316,7 @@ export class InkRenderer {
     gl.uniform1f(uniform('uSoftness'), inkParams.softness);
     gl.uniform1f(uniform('uDrift'), inkParams.drift);
     gl.uniform3fv(uniform('uRimColor'), RIM_COLOR[frame.to]);
+    gl.uniform1f(uniform('uToDark'), frame.to === 'dark' ? 1 : 0);
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     return true;

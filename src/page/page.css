@@ -364,6 +364,17 @@ ul[role='list'] {
   background-image: linear-gradient(var(--accent), var(--accent));
 }
 
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.github-link__icon {
+  flex-shrink: 0;
+  fill: currentColor;
+}
+
 /* ---------- Work ---------- */
 
 .work {
@@ -448,122 +459,147 @@ ul[role='list'] {
   line-height: 1.55;
 }
 
-/* Thumb 1 — Tidal: sun over layered waves */
-.card__thumb--tidal {
-  background: var(--thumb-1);
-}
-
-.tidal__sun {
-  position: absolute;
-  left: 50%;
-  top: 22%;
-  width: 34%;
-  aspect-ratio: 1;
-  margin-left: -17%;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.tidal__wave {
-  position: absolute;
-  left: -10%;
-  width: 120%;
-  height: 60%;
-  border-radius: 50% 50% 0 0;
-  background: var(--thumb-ink);
-}
-
-.tidal__wave--1 {
-  top: 52%;
-  opacity: 0.12;
-}
-
-.tidal__wave--2 {
-  top: 62%;
-  left: -30%;
-  opacity: 0.22;
-}
-
-.tidal__wave--3 {
-  top: 74%;
-  left: 10%;
-  background: var(--thumb-wave);
-}
-
-/* Thumb 2 — Field Notes: big italic specimen */
-.card__thumb--field {
+/* Thumb 1 — Shader: ink drop core with radiating waves */
+.card__thumb--shader {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 22px 24px;
-  background: var(--thumb-2);
+  padding: 18px 22px;
+  background: var(--thumb-1);
 }
 
-.field__glyph {
-  position: absolute;
-  top: 4%;
-  left: 20px;
-  font-family: var(--font-display);
-  font-size: clamp(96px, 11vw, 150px);
-  font-style: italic;
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  color: var(--thumb-ink);
-}
-
-.field__rule {
-  display: block;
-  height: 1px;
-  margin-bottom: 10px;
-  background: var(--thumb-ink);
-  opacity: 0.5;
-}
-
-.field__caption {
-  color: var(--thumb-ink);
-  font-size: 11.5px;
-  font-weight: 560;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-/* Thumb 3 — Halo: concentric rings */
-.card__thumb--halo {
-  background: var(--thumb-3);
-}
-
-.halo__ring,
-.halo__core {
+.shader__ring,
+.shader__drop {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 46%;
   aspect-ratio: 1;
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
 
-.halo__ring {
+.shader__ring--outer {
+  height: 68%;
   border: 1px solid var(--thumb-soft);
 }
 
-.halo__ring--1 {
-  width: 82%;
+.shader__ring--inner {
+  height: 44%;
+  border: 1.5px solid var(--line-strong);
 }
 
-.halo__ring--2 {
-  width: 60%;
-  border-color: var(--line-strong);
+.shader__drop {
+  height: 22%;
+  background: var(--accent);
 }
 
-.halo__ring--3 {
-  width: 38%;
-  border: 6px solid var(--accent);
+.shader__caption {
+  position: relative;
+  color: var(--thumb-ink);
+  font-size: 11px;
+  font-weight: 560;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.halo__core {
-  width: 14%;
+/* Thumb 2 — Terminal: minimal code editor frame */
+.card__thumb--terminal {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--thumb-2);
+}
+
+.terminal__window {
+  width: 78%;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.terminal__bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.terminal__bar span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--thumb-soft);
+}
+
+.terminal__line {
+  display: block;
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: var(--thumb-soft);
+}
+
+.terminal__line--accent {
+  width: 48%;
+  margin-top: 0;
+  background: var(--accent);
+}
+
+.terminal__line--long {
+  width: 88%;
+}
+
+.terminal__line--mid {
+  width: 66%;
+}
+
+.terminal__line--short {
+  width: 40%;
+}
+
+/* Thumb 3 — Nodes: connected dataflow pipeline */
+.card__thumb--nodes {
+  background: var(--thumb-3);
+}
+
+.nodes__link {
+  position: absolute;
+  left: 24%;
+  top: 50%;
+  width: 52%;
+  height: 1.5px;
+  background: var(--line-strong);
+  transform: translateY(-50%) rotate(-8.5deg);
+}
+
+.nodes__node {
+  position: absolute;
+  top: 50%;
+  height: 16%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.nodes__node--left {
+  left: 24%;
+  top: 55%;
+  border: 1.5px solid var(--thumb-ink);
+  background: var(--surface);
+}
+
+.nodes__node--core {
+  left: 50%;
+  height: 26%;
+  border: 5px solid var(--accent);
   background: var(--thumb-ink);
+}
+
+.nodes__node--right {
+  left: 76%;
+  top: 45%;
+  border: 1.5px solid var(--thumb-ink);
+  background: var(--surface);
 }
 
 /* ---------- Footer ---------- */
