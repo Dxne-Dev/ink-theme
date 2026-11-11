@@ -47,7 +47,7 @@ toggle?.addEventListener('click', (e) => {
 
 // Text-entry fields swallow shortcuts; sliders and checkboxes in the demo panel don't.
 const TEXT_ENTRY =
-  'input:not([type="range"]):not([type="checkbox"]):not([type="button"]), textarea, select, [contenteditable="true"]';
+  'input:not([type="range"]):not([type="checkbox"]):not([type="button"]):not([readonly]), textarea, select, [contenteditable="true"]';
 
 window.addEventListener('keydown', (e) => {
   if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;

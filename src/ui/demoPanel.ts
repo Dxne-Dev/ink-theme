@@ -35,6 +35,7 @@ const SLIDERS: SliderDef[] = [
 ];
 
 const STORAGE_KEY = 'ink-bleed:params:v1';
+const REPO_URL = 'https://github.com/Dxne-Dev/ink-theme';
 const DEFAULTS: InkParams = { ...inkParams };
 const SLOW_MO = 0.25;
 
@@ -70,9 +71,11 @@ export class DemoPanel {
   private readonly ink: InkTransition;
   private readonly opts: PanelOptions;
   private readonly replayButton: HTMLButtonElement;
+  private readonly copyButton: HTMLButtonElement;
   private readonly dockSelect: HTMLSelectElement;
   private readonly modeButtons = new Map<TransitionMode, HTMLButtonElement>();
   private readonly sliderLabels = new Map<SliderKey, HTMLElement>();
+  private copyTimer = 0;
   private showMarker: boolean;
 
   constructor(ink: InkTransition, opts: PanelOptions) {
@@ -136,6 +139,25 @@ export class DemoPanel {
         <button type="button" data-replay class="is-quiet" disabled>Replay</button>
         <button type="button" data-reset class="is-quiet">Reset</button>
       </div>
+      <div class="demo-panel__prompt">
+        <span class="demo-panel__prompt-label">AI integration prompt</span>
+        <div class="demo-panel__prompt-row">
+          <div class="demo-panel__prompt-box" data-copy-trigger>
+            <span class="demo-panel__prompt-prefix" aria-hidden="true">&gt;_</span>
+            <input
+              type="text"
+              id="demo-prompt-field"
+              name="demo-prompt-field"
+              class="demo-panel__prompt-input"
+              readonly
+              value=""
+              aria-label="AI integration prompt (click to copy)"
+              title="Click to copy the AI integration prompt"
+            />
+          </div>
+          <button type="button" class="demo-panel__copy-btn" data-copy>Copy</button>
+        </div>
+      </div>
       <p class="demo-panel__keys"><kbd>1</kbd>–<kbd>6</kbd> / <kbd>M</kbd> mode · <kbd>T</kbd> switch · <kbd>R</kbd> replay · <kbd>D</kbd> panel</p>
     `;
 
@@ -180,6 +202,12 @@ export class DemoPanel {
     this.replayButton = replay;
     replay.addEventListener('click', () => this.replay());
 
+    const copyBtn = el.querySelector<HTMLButtonElement>('[data-copy]');
+    if (!copyBtn) throw new Error('demo panel copy button');
+    this.copyButton = copyBtn;
+    copyBtn.addEventListener('click', () => void this.copyPrompt());
+    el.querySelector('[data-copy-trigger]')?.addEventListener('click', () => void this.copyPrompt());
+
     el.querySelector('[data-reset]')?.addEventListener('click', () => this.reset());
     el.querySelector('[data-close]')?.addEventListener('click', () => this.toggle());
 
@@ -215,6 +243,55 @@ export class DemoPanel {
 
   replay(): void {
     this.ink.replay();
+  }
+
+  /** Builds an AI-ready integration prompt reflecting the active mode and sliders. */
+  buildPrompt(): string {
+    const meta = MODE_BY_ID[inkParams.mode];
+    return [
+      `Implement the "${meta.label}" WebGL2 light/dark theme transition from ${REPO_URL} into my project.`,
+      '',
+      'Selected preset & parameters:',
+      `- mode: "${meta.id}" (${meta.label})`,
+      `- duration: ${inkParams.duration.toFixed(2)}s`,
+      `- tendril (${meta.sliders.tendril}): ${inkParams.tendril.toFixed(2)}`,
+      `- noiseScale (${meta.sliders.noiseScale}): ${inkParams.noiseScale.toFixed(2)}`,
+      `- softness (${meta.sliders.softness}): ${inkParams.softness.toFixed(1)}px`,
+      `- drift (${meta.sliders.drift}): ${inkParams.drift.toFixed(2)}`,
+      `- timeScale: ${inkParams.timeScale}`,
+      '',
+      'Integration requirements:',
+      '1. Install dependencies: `gsap` and `html2canvas`.',
+      '2. Port the WebGL2 transition engine from the repository (`src/gl/params.ts`, `src/gl/noiseTexture.ts`, `src/gl/program.ts`, `src/gl/shaders.ts`, `src/gl/renderer.ts`, `src/capture/capture.ts`, `src/ui/inkTransition.ts`, `src/ui/theme.ts`), using only the selected shader mode unless all modes are needed.',
+      '3. Adapt `theme.ts` and `capture.ts` (`onclone` & `BACKGROUND` colors) to match how this project toggles light/dark mode (e.g. `data-theme` attribute or `.dark` class) and its background colors.',
+      '4. Mount a fixed fullscreen `.ink-canvas` (`pointer-events: none; z-index: 1000`) marked with `data-html2canvas-ignore`, mark the theme toggle button with `data-ink-live` (and optionally wire `src/ui/themeIcon.ts`), and trigger `ink.toggle({ x: e.clientX, y: e.clientY })` on click.',
+      '5. Keep the CSS fallback for browsers without WebGL2 and when `prefers-reduced-motion: reduce` is enabled, and ensure page styles avoid `html2canvas`-unsupported rules (`oklch()`, `color-mix()`, `backdrop-filter`) or color transitions during snapshots.',
+    ].join('\n');
+  }
+
+  async copyPrompt(): Promise<void> {
+    const text = this.buildPrompt();
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+
+    if (!ok) {
+      ok = fallbackCopy(text);
+    }
+
+    window.clearTimeout(this.copyTimer);
+    this.copyButton.textContent = ok ? 'Copied ✓' : 'Failed';
+    this.copyButton.classList.toggle('is-copied', ok);
+    this.copyTimer = window.setTimeout(() => {
+      this.copyButton.textContent = 'Copy';
+      this.copyButton.classList.remove('is-copied');
+    }, 1600);
   }
 
   /** Re-sync controls that depend on transition state. */
@@ -306,4 +383,21 @@ export class DemoPanel {
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
+}
+
+function fallbackCopy(text: string): boolean {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.append(ta);
+  ta.select();
+  let copied = false;
+  try {
+    copied = document.execCommand('copy');
+  } catch {
+    copied = false;
+  }
+  ta.remove();
+  return copied;
 }
