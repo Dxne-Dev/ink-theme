@@ -1482,6 +1482,190 @@ void main() {
 }
 `;
 
+
+/**
+ * 21. Fireworks Burst: multi-burst fireworks — ascending trails then starburst explosions.
+ */
+const FIREWORKS_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  float ang = atan(rel.y, rel.x);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.8, 1.2);
+
+  float inner = R * 0.48 + cleanup - soft*1.8 - 20.0;
+  float outer = R * 1.62 + cleanup + soft*2.5 + 52.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  // firework burst centers scattered from click — deterministic with seed
+  vec2 p = rel / max(uRef,1.0);
+  float sparkCount = 3.0 + floor(clamp(uTendril,0.0,2.5)*1.2); // 3..6 bursts
+  float cov = 0.0;
+  float glowAcc = 0.0;
+  vec3 burstColAcc = vec3(0.0);
+
+  // small loop — fixed 6 bursts max for compat
+  for (int i=0; i<6; i++) {
+    if (float(i) >= sparkCount) break;
+    vec2 seed2 = uSeed + vec2(float(i)*7.3, float(i)*5.1);
+    vec2 burstOff = (hash22(seed2)*2.0 - 1.0) * 0.38 * R * (0.5 + ns*0.18);
+    // bursts ignite at staggered times
+    float ignite = float(i) * 0.06 * (1.2 - uLinear*0.3) + hash21(seed2+2.7)*0.08;
+    float localT = clamp((uLinear - ignite) / 0.42, 0.0, 1.0);
+    if (localT <= 0.0) continue;
+    // trail phase (rising) vs explosion phase
+    float trailPhase = 1.0 - smoothstep(0.0, 0.32, localT);
+    float explodePhase = smoothstep(0.28, 0.55, localT) * (1.0 - smoothstep(0.75, 1.0, localT));
+
+    vec2 burstCenter = burstOff * (0.2 + localT*0.45);
+    vec2 toBurst = css - (uCenter + burstCenter);
+    float dBurst = length(toBurst);
+    float angBurst = atan(toBurst.y, toBurst.x);
+
+    // trail — thin vertical streak
+    float trailLen = (1.0 - localT) * 42.0 * smoothstep(0.0, 0.4, localT);
+    float trailMask = exp(-pow(length(toBurst - vec2(0.0, -trailLen*0.5))/max(3.5, soft*0.4),2.0)) * trailPhase * 0.85;
+    glowAcc += trailMask * 0.12;
+
+    // starburst — radial streaks + spark particles
+    float rayCountF = 9.0 + hash21(seed2+4.1)*6.0;
+    float rayPh = fract(angBurst*0.15915494*rayCountF + seed2.x*0.7);
+    float streak = pow(max(0.0, 1.0 - abs(rayPh*2.0-1.0)*1.8), 3.2 + ns*0.3) * smoothstep(0.0, 80.0, dBurst);
+    float radius = (18.0 + streak* (14.0+uTendril*8.0) + sin(angBurst*rayCountF*1.5 + t*2.0 + seed2.y*5.0)*2.0) * localT * 0.9;
+    // explosion shell
+    float shell = 1.0 - smoothstep(radius - soft, radius + soft, dBurst);
+    // inner spark glitter
+    float glitter = hash21(floor(toBurst*0.08 + seed2*3.0 + vec2(t*0.5)));
+    float sparkle = step(0.82, glitter) * exp(-pow(dBurst*0.012,2.0)) * explodePhase * 0.14 * clamp(uTendril,0.4,2.0);
+
+    float burstCov = shell * explodePhase + trailMask;
+    cov = max(cov, burstCov + sparkle);
+
+    // colorful burst palette — gold, magenta, cyan, emerald
+    float hueIdx = hash21(seed2+1.3);
+    vec3 c1 = mix(vec3(1.0,0.78,0.12), vec3(1.0,0.22,0.42), smoothstep(0.0,0.5,hueIdx));
+    c1 = mix(c1, mix(vec3(0.18,0.92,1.0), vec3(0.32,1.0,0.42), hueIdx), smoothstep(0.5,1.0,hueIdx));
+    burstColAcc += c1 * (burstCov*0.55 + sparkle*1.4) * explodePhase;
+  }
+
+  // base circular reveal + burst coverage
+  vec2 q = p*(2.0*ns) + uSeed;
+  float warp = fbm3(q + vec2(t*0.12)) * 0.42;
+  float reach = 1.0 + 0.10*warp;
+  float baseF = d - R*reach - cleanup;
+  float baseCov = 1.0 - smoothstep(-soft, soft, baseF);
+  cov = max(cov, baseCov);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // add burst colors as additive glow
+  float fallT = smoothstep(0.35, 1.0, uLinear);
+  float gravity = fallT * max(rel.y,0.0) * 0.0012 * (0.6 + uTendril*0.3);
+  // falling embers after explosion
+  vec2 emberUV = css*0.07*ns + vec2(t*0.3, t*1.2 + gravity*8.0) + uSeed*2.0;
+  vec2 emberCell = floor(emberUV);
+  vec2 emberFrac = fract(emberUV);
+  float emberSeed = hash21(emberCell);
+  float ember = step(0.78, emberSeed) * (1.0 - length(emberFrac-vec2(0.5))*1.6) * cov * fallT * 0.22;
+
+  col += burstColAcc * 0.42;
+  col += vec3(1.0,0.92,0.72) * glowAcc * 0.45;
+  col += vec3(1.0,0.78,0.32) * ember * 1.1;
+
+  // bright center flash for first burst
+  float centerFlash = exp(-pow(d/max(R*0.14,8.0),2.0)) * 1.2) * (1.0 - smoothstep(0.18,0.45,uLinear)) * 0.9;
+  col = mix(col, vec3(1.0), centerFlash * 0.55);
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 22. Liquid Chrome: molten mercury flowing — mirror reflections + viscous beads.
+ */
+const CHROME_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  float ang = atan(rel.y, rel.x);
+  vec2 dir = d < 1e-3 ? vec2(1.0,0.0) : rel / d;
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.4, 1.0);
+
+  float inner = R * 0.62 + cleanup - soft*1.8 - 18.0;
+  float outer = R * 1.55 + cleanup + soft*2.8 + 40.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / max(uRef,1.0) * (2.4*ns) + uSeed;
+  // chrome fluid distortion — highly reflective
+  vec2 q = p + vec2(t*0.18, -t*0.14) + fbm3(p + vec2(t*0.12))*0.55;
+  float fluid = fbm4(q*1.4);
+  float chromeWarp = fbm5(q*1.1 + fluid*1.2) * 0.55;
+  float beads = sin(p.x*8.0*ns + fluid*4.0 + t*1.5) * sin(p.y*7.0*ns - fluid*3.5 - t*1.2);
+  beads = pow(abs(beads), 0.65 + ns*0.15) * 0.35;
+
+  float mercury = sin(ang* (3.0+uTendril) + d*0.012*ns + t*1.8) * 0.18 + chromeWarp*0.22 + beads*0.12;
+  float reach = 1.0 + mercury * 0.14 + fluid*0.08;
+  float f = d - R*reach - cleanup;
+
+  // secondary liquid tendrils — mercury fingers
+  float finger = sin(ang* (6.0+uTendril*1.4) + hash21(vec2(floor(ang*1.8),0.0))*5.0);
+  finger = pow(max(finger*0.5+0.5,0.0), 4.0 + ns)* (12.0+uTendril*9.0) * smoothstep(0.0,90.0,d);
+  f -= finger * 0.35 * smoothstep(0.0, 0.6, uLinear);
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  // chrome reflection — simulate liquid mirror by offset sampling + highlight
+  vec2 reflOff = dir * finger * 0.08 + vec2(fluid, chromeWarp) * 3.0 * smoothstep(-soft, soft*1.2, f+soft) * cov * 0.25;
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx + reflOff * uCanvasScale);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx + reflOff * uCanvasScale);
+  vec3 col = mix(from, to, cov);
+
+  // liquid chrome highlight — sharp specular along edge
+  float chromeEdge = exp(-pow((f+soft*0.15)/max(soft*0.7,1.0),2.0)) * cov;
+  float chromeInner = exp(-pow((f-soft*0.6)/max(soft,1.0),2.0)) * cov;
+  vec3 chromeBright = vec3(0.96,0.97,1.0);
+  vec3 chromeMid = mix(vec3(0.72,0.74,0.78), vec3(0.88,0.88,0.92), smoothstep(-0.2,0.6, fluid));
+  vec3 chromeDark = mix(vec3(0.18,0.18,0.22), vec3(0.45,0.46,0.52), smoothstep(-0.2,0.6, chromeWarp));
+
+  // mercury shading — blend bright highlight + mid + dark according to curvature
+  float curve = sin(d*0.04*ns + ang*2.0 + t*0.8 + chromeWarp*2.5) * 0.5 + 0.5;
+  vec3 chromeShade = mix(chromeDark, chromeMid, smoothstep(0.2,0.7, curve));
+  col = mix(col, chromeShade, chromeEdge * 0.55);
+  col = mix(col, chromeBright, chromeEdge * 0.42 * (0.6 + beads*0.6));
+  // inner liquid gloss
+  col = mix(col, chromeBright * 1.05, chromeInner * 0.18);
+
+  // viscous beads — liquid droplets along surface tension line
+  float beadMask = pow(abs(sin(d*0.06*ns + t*1.2 + fluid*2.0)), 3.0 + ns) * exp(-pow(f/max(soft,1.0),2.0)) * cov * 0.55;
+  col = mix(col, chromeBright, beadMask * 0.32);
+
+  // rainbow chrome fringe — subtle iridescence at edge
+  float fringe = exp(-pow(max(f,0.0)/max(soft*1.6,1.0),2.0)) * cov * 0.28;
+  vec3 irides = vec3(0.5+0.5*cos(ang*2.0 + t*0.6), 0.5+0.5*cos(ang*2.0 + t*0.6 + 2.09), 0.5+0.5*cos(ang*2.0 + t*0.6 + 4.18));
+  col = mix(col, irides * 0.7 + vec3(0.9), fringe * 0.14);
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
 const FRAG_BODIES: Record<TransitionMode, string> = {
   ink: INK_MAIN,
   ripple: RIPPLE_MAIN,
@@ -1503,6 +1687,8 @@ const FRAG_BODIES: Record<TransitionMode, string> = {
   shatter: SHATTER_MAIN,
   plasma: PLASMA_MAIN,
   glitch: GLITCH_MAIN,
+  fireworks: FIREWORKS_MAIN,
+  chrome: CHROME_MAIN,
 };
 
 export function buildFragmentShader(mode: TransitionMode): string {

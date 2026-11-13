@@ -2,7 +2,7 @@
 
 Real-time WebGL2 & GLSL light/dark theme transitions powered by full-document GPU snapshots, GSAP choreography, and a live interactive control panel.
 
-Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **20 shader transition modes (6 classic + 8 organic + 6 spectacular)**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
+Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **22 shader transition modes (6 classic + 8 organic + 6 spectacular + 2 flagship)**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
 
 Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
 
@@ -32,6 +32,8 @@ Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
 | 18 | `shatter` | **Glass Shatter** | Impact-cracked glass with shard displacement. |
 | 19 | `plasma` | **Plasma Surge** | Electric plasma arcs lashing across the screen. |
 | 20 | `glitch` | **Digital Glitch** | RGB split, scanlines, block tearing. |
+| 21 | `fireworks` | **Fireworks Burst** | Multi-burst fireworks — trails + starbursts + embers. |
+| 22 | `chrome` | **Liquid Chrome** | Molten mercury — mirror reflections + viscous beads. |
 
 ---
 
@@ -123,7 +125,7 @@ src/
 │   ├── params.ts           # Mode definitions, slider labels, live inkParams state
 │   ├── noiseTexture.ts     # 256x256 tileable 4-channel gradient noise texture
 │   ├── program.ts          # WebGL2 shader compilation and uniform lookup cache
-│   ├── shaders.ts          # Shared GLSL preamble + 20 transition fragment shaders (6 classic + 8 organic + 6 spectacular)
+│   ├── shaders.ts          # Shared GLSL preamble + 22 transition fragment shaders
 │   └── renderer.ts         # WebGL2 context, textures, ping-pong composite FBOs
 ├── ui/
 │   ├── theme.ts            # Light/dark dataset.theme helpers
