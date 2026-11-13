@@ -1,8 +1,8 @@
 <a class="skip-link" href="#main">Aller au contenu</a>
 
-<header class="site-header">
+<header class="site-header" id="top">
   <div class="container nav">
-    <a class="wordmark" href="#" aria-label="Dxne-Dev, accueil">
+    <a class="wordmark" href="#top" aria-label="Dxne-Dev, accueil">
       <span class="wordmark__dot" aria-hidden="true"></span>
       Dxne-Dev
     </a>
@@ -103,7 +103,7 @@
         </a>
       </li>
       <li>
-        <a class="card" href="#monolithe">
+        <article class="card">
           <div class="card__thumb card__thumb--terminal" aria-hidden="true">
             <span class="terminal__window">
               <span class="terminal__bar">
@@ -120,10 +120,10 @@
             <h3 class="card__title">Monolithe UI — Kit typographique</h3>
             <p class="card__desc">Bibliothèque de composants accessibles sans dépendances, pensée pour une latence nulle et un rendu net.</p>
           </div>
-        </a>
+        </article>
       </li>
       <li>
-        <a class="card" href="#flux">
+        <article class="card">
           <div class="card__thumb card__thumb--nodes" aria-hidden="true">
             <span class="nodes__link"></span>
             <span class="nodes__node nodes__node--left"></span>
@@ -135,9 +135,49 @@
             <h3 class="card__title">Flux Studio — Éditeur nodal</h3>
             <p class="card__desc">Pipeline visuel temps réel synchronisant état client, WebSockets et rendu GPU à 60 images par seconde.</p>
           </div>
-        </a>
+        </article>
       </li>
     </ul>
+  </section>
+
+  <section class="details container" id="about" aria-labelledby="about-title">
+    <div class="section-head">
+      <h2 class="section-head__title" id="about-title">Stack &amp; méthode</h2>
+      <span class="section-head__meta">Sous le capot</span>
+    </div>
+    <div class="details__grid">
+      <article class="details__item">
+        <span class="details__number">01 / RENDU</span>
+        <h3>WebGL2 &amp; GLSL</h3>
+        <p>Six shaders composent les thèmes en temps réel, avec une texture de bruit partagée pour dessiner chaque effet.</p>
+      </article>
+      <article class="details__item">
+        <span class="details__number">02 / INTERFACE</span>
+        <h3>TypeScript &amp; GSAP</h3>
+        <p>Une interface légère pilote les paramètres et synchronise la transition avec le bouton de thème.</p>
+      </article>
+      <article class="details__item">
+        <span class="details__number">03 / CAPTURE</span>
+        <h3>html2canvas</h3>
+        <p>Les deux thèmes sont capturés sans modifier la page visible. Un repli CSS prend le relais si WebGL2 est indisponible.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="lab container" id="journal" aria-labelledby="journal-title">
+    <div class="section-head">
+      <h2 class="section-head__title" id="journal-title">Labo de transitions</h2>
+      <span class="section-head__meta">À vous de jouer</span>
+    </div>
+    <div class="lab__content">
+      <p>Explorez les six effets, ajustez leur durée et leur intensité, puis copiez les réglages pour les intégrer à votre projet.</p>
+      <button class="button button--primary" type="button" data-open-controls aria-controls="transition-controls" aria-expanded="false">
+        Ouvrir les réglages
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path d="M3 8h10M9 4l4 4-4 4" />
+        </svg>
+      </button>
+    </div>
   </section>
 </main>
 
@@ -151,9 +191,6 @@
       <span>© 2026 Dxne-Dev</span>
       <ul class="footer__social" role="list">
         <li><a id="social-github-link" href="https://github.com/Dxne-Dev/ink-theme" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-        <li><a href="#">X / Twitter</a></li>
-        <li><a href="#">LinkedIn</a></li>
-        <li><a href="#">CodePen</a></li>
       </ul>
       <span class="footer__local">France · <span id="local-time">--:--</span></span>
     </div>

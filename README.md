@@ -35,6 +35,25 @@ Available scripts in `package.json`:
 - `npm run dev` — Start Vite dev server (default `http://localhost:5173/`)
 - `npm run build` — Run TypeScript typechecking (`tsc`) and production bundle (`vite build`)
 - `npm run preview` — Preview the production build locally
+- `npm test` — Build, then run Playwright + axe tests (`playwright.config.ts`)
+
+---
+
+## Accessibility & Compatibility Notes
+
+- Light-theme `--muted` meets WCAG AA (`#6c6861` on `#f6f4ef` ≥ 4.5:1).
+- The transition mode radiogroup supports Arrow / Home / End keyboard navigation and `aria-checked`.
+- `prefers-reduced-motion: reduce` disables the WebGL ink and shows an instant theme change (no CSS fade, no `?auto=1` marker animation).
+- The demo panel declares `lang="en"` inside the French page and constrains its height (`max-height: 100dvh` + scroll) so it stays reachable on phones and in landscape.
+- Captures are invalidated via `MutationObserver` + `ResizeObserver` + `InkTransition.invalidate()` when content changes without a resize (so stale composites do not persist).
+- If a shader fails to compile, `InkRenderer.supportsMode` gates that mode and the toggle falls back to the CSS cross-fade.
+- `InkTransition.dispose()` aborts observers and `InkRenderer.dispose()` releases GPU resources for embedding.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ---
 

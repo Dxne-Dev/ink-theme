@@ -129,7 +129,7 @@ export class InkRenderer {
   }
 
   /** Context loss/restore hooks. `onRestored` should re-upload snapshots. */
-  watchContext(onLost: () => void, onRestored: () => void): void {
+  watchContext(onLost: () => void, onRestored: () => void, signal: AbortSignal): void {
     this.canvas.addEventListener('webglcontextlost', (e) => {
       e.preventDefault();
       this.lost = true;
@@ -137,16 +137,53 @@ export class InkRenderer {
       this.composites = [];
       this.activeComposite = -1;
       onLost();
-    });
+    }, { signal });
     this.canvas.addEventListener('webglcontextrestored', () => {
       this.lost = false;
-      this.init();
-      onRestored();
-    });
+      try {
+        this.init();
+        onRestored();
+      } catch (err) {
+        // A restored context may have fewer capabilities than the original one.
+        console.error('[ink] failed to restore WebGL', err);
+        this.lost = true;
+        onLost();
+      }
+    }, { signal });
   }
 
   get isLost(): boolean {
     return this.lost;
+  }
+
+  /** Individual shaders can fail to compile even when WebGL2 itself is available. */
+  supportsMode(mode: TransitionMode): boolean {
+    return !this.lost && this.programs.has(mode);
+  }
+
+  /** Invalidate the snapshots without deleting textures still used by an active frame. */
+  invalidate(): void {
+    for (const entry of this.textures.values()) entry.key = '';
+  }
+
+  /** Release all GPU resources owned by this renderer. */
+  dispose(): void {
+    if (!this.lost) {
+      const gl = this.gl;
+      for (const { program } of this.programs.values()) gl.deleteProgram(program);
+      for (const { texture } of this.textures.values()) gl.deleteTexture(texture);
+      for (const composite of this.composites) {
+        gl.deleteTexture(composite.texture);
+        gl.deleteFramebuffer(composite.framebuffer);
+      }
+      gl.deleteTexture(this.noise);
+      gl.deleteVertexArray(this.vao);
+    }
+    this.programs.clear();
+    this.textures.clear();
+    this.composites = [];
+    this.activeComposite = -1;
+    this.lost = true;
   }
 
   /** Sizes the backing store to the overlay's CSS box at the given DPR. */
@@ -200,9 +237,8 @@ export class InkRenderer {
     return true;
   }
 
-  draw(frame: InkFrame): void {
-    if (this.lost) return;
-    this.render(frame);
+  draw(frame: InkFrame): boolean {
+    return !this.lost && this.render(frame);
   }
 
   // ---------- internals ----------
