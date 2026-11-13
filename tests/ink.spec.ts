@@ -230,14 +230,14 @@ test('supportsMode gate falls back to CSS when a shader is unavailable', async (
   await expect(page.locator('.ink-canvas.is-active')).toHaveCount(0);
 });
 
-test('all 14 organic modes are exposed in the panel and dock', async ({ page }) => {
+test('all 20 modes are exposed in the panel and dock', async ({ page }) => {
   await page.goto('/?gl=1&panel=1');
   const btnCount = await page.locator('.demo-panel__mode-btn').count();
-  expect(btnCount).toBe(14);
+  expect(btnCount).toBe(20);
   const optCount = await page.locator('.demo-dock__select option').count();
-  expect(optCount).toBe(14);
+  expect(optCount).toBe(20);
   // Each mode should be selectable via ?mode= param without error
-  for (const mode of ['veil','tide','smoke','marble','drip','bloom','aura','storm']) {
+  for (const mode of ['veil','tide','smoke','marble','drip','bloom','aura','storm','nova','vortex','prism','shatter','plasma','glitch']) {
     await page.goto(`/?gl=1&mode=${mode}`);
     await page.waitForTimeout(200);
     const theme = await page.evaluate(() => document.documentElement.dataset.theme);

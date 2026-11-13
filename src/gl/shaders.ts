@@ -1063,6 +1063,425 @@ void main() {
 }
 `;
 
+
+/**
+ * 15. Supernova: star exploding — searing white flash, radiating spikes, plasma wash.
+ */
+const NOVA_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  float ang = atan(rel.y, rel.x);
+  vec2 dir = d < 1e-3 ? vec2(1.0,0.0) : rel / d;
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 2.2, 1.8);
+
+  float inner = R * 0.58 + cleanup - soft*2.5 - 12.0;
+  float outer = R * 1.55 + cleanup + soft*3.0 + 42.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  // star spike rays — 6-fold + noise chaos
+  float baseAng = ang + uSeed.x * 3.0;
+  float rayN = fbm3(vec2(cos(baseAng), sin(baseAng)) * (2.8*ns) + vec2(t*0.22));
+  float rayCount = 5.0 + floor(clamp(uTendril,0.0,2.5)*1.8); // 5..9 spikes
+  float rayPhase = fract(baseAng * 0.15915494 * rayCount);
+  float spike = pow(abs(sin(rayPhase * 3.14159)), 2.8 - ns*0.15) * (0.7 + rayN*0.45);
+  spike = pow(spike, 1.15) * (18.0 + uTendril*10.0) * smoothstep(0.0, 80.0, d);
+
+  float warp = fbm4(rel/uRef*(2.2*ns) + uSeed + vec2(t*0.18));
+  float reach = 1.0 + 0.12*warp + 0.06*rayN;
+  float f = d - R*reach - cleanup - spike;
+
+  // secondary flash ring
+  float ring = exp(-pow((d - R*0.55)/max(18.0, soft*3.0), 2.0)) * 0.25 * (1.0 - smoothstep(0.4,0.9,uLinear));
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  cov = max(cov, ring);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // searing flash
+  float flash = exp(-pow((f+soft*0.2)/max(soft,1.0),2.0)) * cov;
+  float flash2 = exp(-pow(max(f,0.0)/max(soft*1.6,1.0),2.0)) * smoothstep(-soft*0.8, soft*0.4, f+soft) * 0.6;
+  vec3 hot = vec3(1.0, 0.92, 0.75);
+  vec3 plasma = mix(vec3(1.0,0.42,0.12), vec3(0.98,0.18,0.02), smoothstep(0.2,0.8, flash));
+  col = mix(col, plasma, flash * 0.65);
+  col = mix(col, hot, flash2 * 0.38 * clamp(uTendril,0.4,2.0));
+  // outer blast glow
+  float blast = exp(-pow(max(f,0.0)/max(soft*2.2,1.0),2.0)) * (0.5 + spike*0.015);
+  col = 1.0 - (1.0 - col) * (1.0 - vec3(1.0,0.55,0.18) * blast * 0.55);
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 16. Black Vortex: swirling black-hole accretion with lensed shimmer.
+ */
+const VORTEX_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  vec2 dir = d < 1e-3 ? vec2(1.0,0.0) : rel / d;
+  float ang = atan(rel.y, rel.x);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.9, 1.4);
+
+  float inner = R * 0.52 + cleanup - soft*2.2 - 14.0;
+  float outer = R * 1.60 + cleanup + soft*2.8 + 36.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  // spiral twist — angle twists with 1/d + time
+  float twist = t * 2.2 * clamp(uTendril*0.45, 0.25, 1.2) + 2.8 / max(d*0.02, 0.4);
+  float spiralAng = ang + twist * (1.0 + 0.4 / max(d*0.008+0.6, 0.3));
+  vec2 spiralDir = vec2(cos(spiralAng), sin(spiralAng));
+
+  vec2 p = rel / uRef;
+  float arms = 2.0 + floor(clamp(uTendril,0.0,2.5)*1.2); // 2..5 arms
+  float armPhase = fract(spiralAng * 0.15915494 * arms);
+  float armMask = pow(abs(sin(armPhase*3.14159)), 1.6 + ns*0.2);
+
+  float turb = fbm4(p*(1.9*ns) + vec2(t*0.16, -t*0.12) + spiralDir*0.35);
+  float warp = gnoise(spiralDir*2.2 + vec2(t*0.2)) * 0.35 + turb*0.45;
+
+  float reach = 1.0 + 0.14*warp + armMask * 0.18 * (0.6 + uTendril*0.18);
+  float f = d - R*reach - cleanup;
+
+  // lensing warp of sampled textures near the edge — bend UV along spiral
+  vec2 lens = spiralDir * armMask * 8.0 * exp(-pow(f/max(soft,1.0),2.0));
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx + lens * uCanvasScale);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx + lens * uCanvasScale);
+  vec3 col = mix(from, to, cov);
+
+  // accretion glow — hot inner rim
+  float rim = exp(-pow((f+soft*0.25)/max(soft*0.85,1.0),2.0)) * cov;
+  float armGlow = armMask * rim * 0.85;
+  vec3 accHot = uToDark > 0.5 ? vec3(0.95,0.42,0.12) : vec3(0.96,0.32,0.08);
+  vec3 accCool = uToDark > 0.5 ? vec3(0.32,0.58,1.0) : vec3(0.18,0.62,1.0);
+  col = mix(col, accHot, armGlow * 0.62);
+  col = mix(col, accCool, exp(-pow(max(f,0.0)/max(soft*2.4,1.0),2.0)) * armMask * 0.18);
+  // event horizon dark ring
+  float horizon = exp(-pow((f)/max(soft*0.6,1.0),2.0)) * cov * 0.18;
+  col -= horizon * 0.35;
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 17. Prism Burst: faceted crystal prism shattering with rainbow dispersion.
+ */
+const PRISM_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  float ang = atan(rel.y, rel.x);
+  vec2 dir = d < 1e-3 ? vec2(1.0,0.0) : rel / d;
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.7, 1.2);
+
+  float inner = R * 0.55 + cleanup - soft*2.2 - 16.0;
+  float outer = R * 1.58 + cleanup + soft*2.8 + 44.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  // faceted angular shards
+  float facets = 6.0 + floor(clamp(ns,0.4,2.5)*2.0); // 6..10
+  float facPhase = fract(ang * 0.15915494 * facets + uSeed.x*0.7 + t*0.04);
+  float shard = pow(abs(sin(facPhase*3.14159)), 0.85);
+  shard = pow(shard, 0.9 + uTendril*0.22);
+
+  // radial spikes
+  float spikeFreq = 3.0 + uTendril*1.2;
+  float rays = sin(ang * spikeFreq + fbm3(dir*2.2 + vec2(t*0.18)) * 2.0) * 0.5 + 0.5;
+  rays = pow(rays, 1.8) * (10.0 + uTendril*8.0) * smoothstep(0.0, 60.0, d);
+
+  vec2 p = rel / uRef;
+  float turb = fbm3(p*(2.0*ns) + vec2(t*0.14, -t*0.1));
+  float reach = 1.0 + 0.11*turb + shard*0.14;
+  float f = d - R*reach - cleanup - rays * 0.55;
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  // strong prismatic dispersion — sample RGB at different offsets
+  float prismAmt = (6.0 + uTendril*4.0) * exp(-pow(f/max(soft*1.2,1.0),2.0)) * cov;
+  vec2 prismDir = dir * prismAmt;
+  vec3 from = sampleDocRGB(uFrom, uFromSize, uFromMap, devPx, vec2(0.0), prismDir * 0.65);
+  vec3 to = sampleDocRGB(uTo, uToSize, uToMap, devPx, vec2(0.0), prismDir * 0.65);
+
+  // chromatic faceting — alternate hues per facet
+  float hueShift = facPhase * 6.283;
+  vec3 prismHue = vec3(0.5 + 0.5*cos(hueShift), 0.5 + 0.5*cos(hueShift + 2.09), 0.5 + 0.5*cos(hueShift + 4.18));
+  from = mix(from, from * prismHue * 1.25, prismAmt * 0.035 * shard);
+  to = mix(to, to * prismHue * 1.25, prismAmt * 0.035 * shard);
+
+  vec3 col = mix(from, to, cov);
+
+  float prismGlow = exp(-pow((f+soft*0.3)/max(soft,1.0),2.0)) * cov * (0.55 + rays*0.015);
+  col = mix(col, prismHue, prismGlow * 0.28);
+  // bright shard edges
+  float edge = exp(-pow(f/max(soft*0.7,1.0),2.0)) * shard * cov * 0.7;
+  col += vec3(1.0) * edge * 0.42;
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 18. Glass Shatter: impact-cracked glass with shard displacement.
+ */
+const SHATTER_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.8, 1.2);
+
+  float inner = R * 0.58 + cleanup - soft*2.0 - 16.0;
+  float outer = R * 1.50 + cleanup + soft*2.5 + 38.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  // crack network — Voronoi-like but cheap: use layered noise ridges
+  vec2 p = rel / uRef * (1.6 * ns) + uSeed;
+  float crack = 0.0;
+  float amp = 0.5;
+  vec2 cq = p;
+  for (int i=0; i<3; i++) {
+    float n = gnoise(cq + vec2(t*0.08));
+    crack += amp * (1.0 - abs(n));
+    cq = OCT * cq + 3.7;
+    amp *= 0.5;
+  }
+  crack = crack / 0.875;
+  // radial impact rays
+  float ang = atan(rel.y, rel.x);
+  float rays = sin(ang * (7.0 + uTendril*2.5) + hash21(vec2(floor(ang*2.8))) * 4.0);
+  rays = pow(max(rays*0.5+0.5, 0.0), 6.0) * smoothstep(0.0, 120.0, d) * (12.0 + uTendril*8.0);
+
+  float turb = fbm3(p + vec2(t*0.12)) * 0.45;
+  float reach = 1.0 + 0.10*turb + crack*0.08 * clamp(uTendril*0.35,0.1,0.8);
+  float f = d - R*reach - cleanup - rays;
+
+  // crack line distance — thin dark lines
+  float crackLine = 1.0 - smoothstep(0.0, 0.018 + soft*0.0015, abs(crack - 0.5));
+  crackLine *= smoothstep(0.0, 60.0, R - d + cleanup + 20.0) * (1.0 - smoothstep(-soft*1.5, soft*1.5, f));
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  // shard displacement — jitter UV per Voronoi cell
+  vec2 shardJitter = (hash22(floor(css * 0.04 * ns + uSeed*2.0)) * 2.0 - 1.0) * crackLine * 14.0 * (1.0 - cov*0.5);
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx + shardJitter * uCanvasScale);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx + shardJitter * uCanvasScale);
+  vec3 col = mix(from, to, cov);
+
+  // impact flash at center
+  float impact = exp(-pow(d / max(R*0.18, 10.0), 2.0)) * (1.0 - smoothstep(0.25,0.85,uLinear)) * 0.9;
+  col = mix(col, vec3(1.0), impact * 0.65);
+  // crack highlights
+  float crackGlow = crackLine * exp(-pow((f+soft*0.5)/max(soft,1.0),2.0)) * cov;
+  col = mix(col, vec3(1.0,0.94,0.72), crackGlow * 0.55);
+  // shard edge bevel
+  col = mix(col, vec3(1.0), crackLine * cov * 0.12);
+
+  outColor = vec4(col, 1.0);
+}
+
+`;
+
+/**
+ * 19. Plasma Surge: electric plasma arcs lashing across the screen.
+ */
+const PLASMA_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  float ang = atan(rel.y, rel.x);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.6, 1.0);
+
+  float inner = R * 0.55 + cleanup - soft*2.2 - 14.0;
+  float outer = R * 1.58 + cleanup + soft*2.8 + 40.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / uRef * (2.2 * ns) + uSeed;
+
+  // plasma tendrils — lightning-like branching
+  float branches = 3.0 + floor(clamp(uTendril,0.0,2.5)*1.6);
+  float branchPhase = fract(ang * 0.15915494 * branches + uSeed.x*0.5 + t*0.06);
+  float lightning = pow(abs(sin(branchPhase*3.14159)), 1.4);
+  lightning = pow(lightning, 2.2) * (16.0 + uTendril*12.0) * smoothstep(0.0, 70.0, d);
+
+  float turb = fbm4(p + vec2(t*0.22, -t*0.18));
+  float fil = gnoise(p*3.2 + vec2(t*0.3)) * 0.35 + gnoise2(p*5.0 + vec2(-t*0.25, t*0.18)) * 0.25;
+  float elec = sin(d*0.04*ns + t*6.0 + turb*4.0) * 0.5 + 0.5;
+  elec = pow(elec, 1.5) * 6.0 * smoothstep(0.0, 100.0, d) * clamp(uTendril*0.5,0.3,1.3);
+
+  float reach = 1.0 + 0.13*turb + 0.07*fil;
+  float f = d - R*reach - cleanup - lightning - elec;
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  // electric displacement
+  vec2 arcDir = normalize(vec2(sin(ang + t*0.8), cos(ang*1.3 + t*0.6)));
+  vec2 arcOff = arcDir * lightning * 0.25 * exp(-pow(f/max(soft,1.0),2.0)) * cov;
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx + arcOff * uCanvasScale);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx + arcOff * uCanvasScale);
+  vec3 col = mix(from, to, cov);
+
+  // plasma glow — cyan/magenta arcs
+  float arcGlow = exp(-pow((f+soft*0.2)/max(soft*0.9,1.0),2.0)) * cov * (0.6 + lightning*0.012);
+  float flicker = 0.75 + 0.25 * sin(t*18.0 + hash21(vec2(ang*2.0, d*0.01))*10.0);
+  vec3 plasmaA = vec3(0.15, 0.72, 1.0);
+  vec3 plasmaB = vec3(0.92, 0.18, 0.88);
+  vec3 plasmaC = vec3(0.98, 0.95, 0.35);
+  float plasmaMix = fract(ang*0.15 + t*0.12 + turb*0.3);
+  vec3 plasmaCol = mix(plasmaA, plasmaB, smoothstep(0.0,0.6, plasmaMix));
+  plasmaCol = mix(plasmaCol, plasmaC, smoothstep(0.6,1.0, plasmaMix) * 0.45);
+  col = mix(col, plasmaCol, arcGlow * 0.68 * flicker);
+  col += plasmaCol * arcGlow * 0.35 * flicker;
+  // bright core
+  float core = exp(-pow(f/max(soft*0.55,1.0),2.0)) * cov * 0.85;
+  col = mix(col, vec3(1.0), core * 0.42);
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 20. Digital Glitch: RGB split, scanlines, block tearing.
+ */
+const GLITCH_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  float ang = atan(rel.y, rel.x);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.6, 1.0);
+
+  float inner = R * 0.60 + cleanup - soft*1.8 - 10.0;
+  float outer = R * 1.52 + cleanup + soft*2.2 + 32.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  // block glitch tiling
+  vec2 blockUV = floor(css * 0.03 * ns + vec2(t*1.2, t*0.7) + uSeed*4.0);
+  float blockRand = hash21(blockUV);
+  float blockThr = 0.68 - clamp(uTendril*0.08, 0.0, 0.18);
+  float isBlock = step(blockThr, blockRand);
+
+  // horizontal tear bands
+  float band = fract(css.y * 0.008 * ns + t*0.9 + hash21(vec2(floor(css.y*0.04), 0.0))*2.0);
+  float tear = step(0.92, band + hash21(vec2(floor(css.y*0.12 + t*8.0), 0.0))*0.18) * isBlock * 0.65;
+
+  float turb = fbm3(rel/uRef*(1.8*ns) + uSeed + vec2(t*0.2)) * 0.5 + 0.5;
+  float reach = 1.0 + 0.10*turb + tear*0.08;
+  float f = d - R*reach - cleanup;
+
+  // scanlines — only inside revealed region
+  float scan = sin(css.y * 0.35) * 0.5 + 0.5;
+  scan = pow(scan, 1.2) * 0.08;
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  // RGB split amount modulated by distance to edge and tendril
+  float splitAmt = (6.0 + uTendril*6.0) * exp(-pow(f/max(soft*1.1,1.0),2.0)) * cov + tear*14.0;
+  float flicker = step(0.82, fract(t*7.5 + blockRand*3.0)) * 0.5;
+  splitAmt += flicker * 5.0;
+
+  vec2 splitX = vec2(splitAmt, 0.0);
+  // displaced channel sampling
+  vec3 from;
+  vec3 to;
+  {
+    vec2 base = devPx;
+    float rF = sampleDoc(uFrom, uFromSize, uFromMap, base + splitX * uCanvasScale).r;
+    float gF = sampleDoc(uFrom, uFromSize, uFromMap, base).g;
+    float bF = sampleDoc(uFrom, uFromSize, uFromMap, base - splitX * uCanvasScale).b;
+    from = vec3(rF,gF,bF);
+    float rT = sampleDoc(uTo, uToSize, uToMap, base + splitX * uCanvasScale).r;
+    float gT = sampleDoc(uTo, uToSize, uToMap, base).g;
+    float bT = sampleDoc(uTo, uToSize, uToMap, base - splitX * uCanvasScale).b;
+    to = vec3(rT,gT,bT);
+  }
+
+  // block displacement — horizontal slip
+  float slip = (hash21(blockUV + 7.3) * 2.0 - 1.0) * isBlock * step(f, soft*0.6) * 18.0 * cov;
+  vec2 slipOff = vec2(slip, 0.0) * uCanvasScale;
+  // re-sample with slip for extra destruction (blend 50/50)
+  {
+    vec3 fromSlip = vec3(
+      sampleDoc(uFrom, uFromSize, uFromMap, devPx + slipOff + splitX * uCanvasScale).r,
+      sampleDoc(uFrom, uFromSize, uFromMap, devPx + slipOff).g,
+      sampleDoc(uFrom, uFromSize, uFromMap, devPx + slipOff - splitX * uCanvasScale).b
+    );
+    vec3 toSlip = vec3(
+      sampleDoc(uTo, uToSize, uToMap, devPx + slipOff + splitX * uCanvasScale).r,
+      sampleDoc(uTo, uToSize, uToMap, devPx + slipOff).g,
+      sampleDoc(uTo, uToSize, uToMap, devPx + slipOff - splitX * uCanvasScale).b
+    );
+    from = mix(from, fromSlip, isBlock * cov * 0.55);
+    to = mix(to, toSlip, isBlock * cov * 0.55);
+  }
+
+  vec3 col = mix(from, to, cov);
+  // scanline darkening + chromatic aberration fringe
+  col -= scan * cov * 0.9;
+  float fringe = exp(-pow((f+soft*0.4)/max(soft,1.0),2.0)) * cov;
+  col += vec3(0.95,0.15,0.12) * fringe * 0.18 * step(0.5, fract(ang*0.3 + t));
+  col += vec3(0.12,0.85,1.0) * fringe * 0.16 * step(0.5, 1.0 - fract(ang*0.3 + t));
+
+  // block tint
+  col = mix(col, col * vec3(1.08,1.0,0.92), isBlock * cov * 0.12);
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
 const FRAG_BODIES: Record<TransitionMode, string> = {
   ink: INK_MAIN,
   ripple: RIPPLE_MAIN,
@@ -1078,6 +1497,12 @@ const FRAG_BODIES: Record<TransitionMode, string> = {
   bloom: BLOOM_MAIN,
   aura: AURA_MAIN,
   storm: STORM_MAIN,
+  nova: NOVA_MAIN,
+  vortex: VORTEX_MAIN,
+  prism: PRISM_MAIN,
+  shatter: SHATTER_MAIN,
+  plasma: PLASMA_MAIN,
+  glitch: GLITCH_MAIN,
 };
 
 export function buildFragmentShader(mode: TransitionMode): string {

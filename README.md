@@ -2,7 +2,7 @@
 
 Real-time WebGL2 & GLSL light/dark theme transitions powered by full-document GPU snapshots, GSAP choreography, and a live interactive control panel.
 
-Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **14 shader transition modes (6 classic + 8 organic)**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
+Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **20 shader transition modes (6 classic + 8 organic + 6 spectacular)**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
 
 Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
 
@@ -26,6 +26,12 @@ Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
 | 12 | `bloom` | **Petal Bloom** | Floral petals unfurling radially with soft curl and petal veins. |
 | 13 | `aura` | **Aura Glow** | Aurora borealis-like luminous veil with pulsing halo and shimmer. |
 | 14 | `storm` | **Storm Cloud** | Roiling storm front with turbulent billows and distant lightning flash. |
+| 15 | `nova` | **Supernova** | Star exploding — searing white flash, radiating spikes, plasma wash. |
+| 16 | `vortex` | **Black Vortex** | Swirling black-hole accretion with lensed shimmer. |
+| 17 | `prism` | **Prism Burst** | Faceted crystal prism shattering with rainbow dispersion. |
+| 18 | `shatter` | **Glass Shatter** | Impact-cracked glass with shard displacement. |
+| 19 | `plasma` | **Plasma Surge** | Electric plasma arcs lashing across the screen. |
+| 20 | `glitch` | **Digital Glitch** | RGB split, scanlines, block tearing. |
 
 ---
 
@@ -75,7 +81,7 @@ MIT — see [LICENSE](LICENSE).
 - `D` : Expand or collapse the full control panel
 
 ### URL Query Parameters
-- `?mode=ember` — Pre-select a mode (`ink`, `ripple`, `ember`, `halftone`, `eclipse`, `crystal`, `veil`, `tide`, `smoke`, `marble`, `drip`, `bloom`, `aura`, `storm`)
+- `?mode=ember` — Pre-select a mode (`ink`, `ripple`, `ember`, `halftone`, `eclipse`, `crystal`, `veil`, `tide`, `smoke`, `marble`, `drip`, `bloom`, `aura`, `storm`, `nova`, `vortex`, `prism`, `shatter`, `plasma`, `glitch`)
 - `?panel=1` — Open the full control panel on load
 - `?auto=1` — Demo mode (triggers a toggle from a random viewport coordinate every ~3 s)
 - `?clean=1` — Hide the collapsed bottom-left dock for clean screen recordings
@@ -117,7 +123,7 @@ src/
 │   ├── params.ts           # Mode definitions, slider labels, live inkParams state
 │   ├── noiseTexture.ts     # 256x256 tileable 4-channel gradient noise texture
 │   ├── program.ts          # WebGL2 shader compilation and uniform lookup cache
-│   ├── shaders.ts          # Shared GLSL preamble + 14 transition fragment shaders (6 classic + 8 organic)
+│   ├── shaders.ts          # Shared GLSL preamble + 20 transition fragment shaders (6 classic + 8 organic + 6 spectacular)
 │   └── renderer.ts         # WebGL2 context, textures, ping-pong composite FBOs
 ├── ui/
 │   ├── theme.ts            # Light/dark dataset.theme helpers

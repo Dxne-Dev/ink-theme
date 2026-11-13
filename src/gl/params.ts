@@ -15,7 +15,14 @@ export type TransitionMode =
   | 'drip'
   | 'bloom'
   | 'aura'
-  | 'storm';
+  | 'storm'
+  // spectacular extension — 6 high-impact motifs
+  | 'nova'
+  | 'vortex'
+  | 'prism'
+  | 'shatter'
+  | 'plasma'
+  | 'glitch';
 
 export interface ModeSliderLabels {
   tendril: string;
@@ -186,6 +193,72 @@ export const TRANSITION_MODES: readonly ModeMeta[] = [
       drift: 'Wind',
     },
   },
+  {
+    id: 'nova',
+    label: 'Supernova',
+    shortLabel: 'Nova',
+    sliders: {
+      tendril: 'Blast power',
+      noiseScale: 'Ray chaos',
+      softness: 'Flash width',
+      drift: 'Burn speed',
+    },
+  },
+  {
+    id: 'vortex',
+    label: 'Black Vortex',
+    shortLabel: 'Vortex',
+    sliders: {
+      tendril: 'Spiral arms',
+      noiseScale: 'Warp',
+      softness: 'Event horizon',
+      drift: 'Spin',
+    },
+  },
+  {
+    id: 'prism',
+    label: 'Prism Burst',
+    shortLabel: 'Prism',
+    sliders: {
+      tendril: 'Dispersion',
+      noiseScale: 'Prism scale',
+      softness: 'Edge glow',
+      drift: 'Spectrum drift',
+    },
+  },
+  {
+    id: 'shatter',
+    label: 'Glass Shatter',
+    shortLabel: 'Shatter',
+    sliders: {
+      tendril: 'Crack spread',
+      noiseScale: 'Shard scale',
+      softness: 'Impact softness',
+      drift: 'Tremor',
+    },
+  },
+  {
+    id: 'plasma',
+    label: 'Plasma Surge',
+    shortLabel: 'Plasma',
+    sliders: {
+      tendril: 'Arc intensity',
+      noiseScale: 'Plasma grain',
+      softness: 'Discharge',
+      drift: 'Surge speed',
+    },
+  },
+  {
+    id: 'glitch',
+    label: 'Digital Glitch',
+    shortLabel: 'Glitch',
+    sliders: {
+      tendril: 'Glitch chaos',
+      noiseScale: 'Block scale',
+      softness: 'Tear softness',
+      drift: 'Flicker',
+    },
+  },
 ];
 
 export const MODE_BY_ID: Record<TransitionMode, ModeMeta> = {
@@ -203,6 +276,12 @@ export const MODE_BY_ID: Record<TransitionMode, ModeMeta> = {
   bloom: TRANSITION_MODES[11]!,
   aura: TRANSITION_MODES[12]!,
   storm: TRANSITION_MODES[13]!,
+  nova: TRANSITION_MODES[14]!,
+  vortex: TRANSITION_MODES[15]!,
+  prism: TRANSITION_MODES[16]!,
+  shatter: TRANSITION_MODES[17]!,
+  plasma: TRANSITION_MODES[18]!,
+  glitch: TRANSITION_MODES[19]!,
 };
 
 export function isTransitionMode(value: string): value is TransitionMode {
