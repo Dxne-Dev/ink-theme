@@ -7,6 +7,7 @@ const FIRST_DELAY_MS = 1200;
 
 /** A small ring that pulses where the "tap" lands, so viewers see where the drop hit. */
 export function showTapMarker(p: Point): void {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const el = document.createElement('div');
   el.className = 'tap-marker';
   el.setAttribute('aria-hidden', 'true');

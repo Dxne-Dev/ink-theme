@@ -2,7 +2,7 @@
 
 Real-time WebGL2 & GLSL light/dark theme transitions powered by full-document GPU snapshots, GSAP choreography, and a live interactive control panel.
 
-Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **6 shader transition modes**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
+Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **20 shader transition modes (6 classic + 8 organic + 6 spectacular)**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
 
 Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
 
@@ -18,6 +18,20 @@ Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
 | 4 | `halftone` | **Halftone Sweep** | Editorial print-screen dot grid growing across an organic wave with RGB risograph split. |
 | 5 | `eclipse` | **Solar Eclipse** | Expanding umbral shadow with seam-free animated corona rays and twilight rim. |
 | 6 | `crystal` | **Frost & Crystal** | Voronoi polygonal shards flipping facet-by-facet with per-shard prism refraction and icy bevels. |
+| 7 | `veil` | **Silk Veil** | Translucent silk drape unfolding with diagonal folds and luminous sheen. |
+| 8 | `tide` | **Tide Wash** | Ocean tide rolling in with frothy foam crest and wet-sand darkening. |
+| 9 | `smoke` | **Smoke Curl** | Incense-like plume curling upward with soft billowing and smoky veil. |
+| 10 | `marble` | **Marble Vein** | Calacatta marble sweeping with mineral veins and polished highlight. |
+| 11 | `drip` | **Honey Drip** | Viscous honey dripping down with gravity tendrils and amber glint. |
+| 12 | `bloom` | **Petal Bloom** | Floral petals unfurling radially with soft curl and petal veins. |
+| 13 | `aura` | **Aura Glow** | Aurora borealis-like luminous veil with pulsing halo and shimmer. |
+| 14 | `storm` | **Storm Cloud** | Roiling storm front with turbulent billows and distant lightning flash. |
+| 15 | `nova` | **Supernova** | Star exploding — searing white flash, radiating spikes, plasma wash. |
+| 16 | `vortex` | **Black Vortex** | Swirling black-hole accretion with lensed shimmer. |
+| 17 | `prism` | **Prism Burst** | Faceted crystal prism shattering with rainbow dispersion. |
+| 18 | `shatter` | **Glass Shatter** | Impact-cracked glass with shard displacement. |
+| 19 | `plasma` | **Plasma Surge** | Electric plasma arcs lashing across the screen. |
+| 20 | `glitch` | **Digital Glitch** | RGB split, scanlines, block tearing. |
 
 ---
 
@@ -35,20 +49,39 @@ Available scripts in `package.json`:
 - `npm run dev` — Start Vite dev server (default `http://localhost:5173/`)
 - `npm run build` — Run TypeScript typechecking (`tsc`) and production bundle (`vite build`)
 - `npm run preview` — Preview the production build locally
+- `npm test` — Build, then run Playwright + axe tests (`playwright.config.ts`)
+
+---
+
+## Accessibility & Compatibility Notes
+
+- Light-theme `--muted` meets WCAG AA (`#6c6861` on `#f6f4ef` ≥ 4.5:1).
+- The transition mode radiogroup supports Arrow / Home / End keyboard navigation and `aria-checked`.
+- `prefers-reduced-motion: reduce` disables the WebGL ink and shows an instant theme change (no CSS fade, no `?auto=1` marker animation).
+- The demo panel declares `lang="en"` inside the French page and constrains its height (`max-height: 100dvh` + scroll) so it stays reachable on phones and in landscape.
+- Captures are invalidated via `MutationObserver` + `ResizeObserver` + `InkTransition.invalidate()` when content changes without a resize (so stale composites do not persist).
+- If a shader fails to compile, `InkRenderer.supportsMode` gates that mode and the toggle falls back to the CSS cross-fade.
+- `InkTransition.dispose()` aborts observers and `InkRenderer.dispose()` releases GPU resources for embedding.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ---
 
 ## Controls, Shortcuts & URL Flags
 
 ### Keyboard Shortcuts
-- `1` – `6` : Select transition mode directly
+- `1` – `9`, `0` : Select transition mode directly (1-9 → 1-9, 0 → 10, `M` cycles beyond)
 - `M` : Cycle to the next transition mode
 - `T` : Toggle light/dark theme from the toggle button
 - `R` : Replay the last click (same origin point and random seed) using the active mode
 - `D` : Expand or collapse the full control panel
 
 ### URL Query Parameters
-- `?mode=ember` — Pre-select a mode (`ink`, `ripple`, `ember`, `halftone`, `eclipse`, `crystal`)
+- `?mode=ember` — Pre-select a mode (`ink`, `ripple`, `ember`, `halftone`, `eclipse`, `crystal`, `veil`, `tide`, `smoke`, `marble`, `drip`, `bloom`, `aura`, `storm`, `nova`, `vortex`, `prism`, `shatter`, `plasma`, `glitch`)
 - `?panel=1` — Open the full control panel on load
 - `?auto=1` — Demo mode (triggers a toggle from a random viewport coordinate every ~3 s)
 - `?clean=1` — Hide the collapsed bottom-left dock for clean screen recordings
@@ -90,7 +123,7 @@ src/
 │   ├── params.ts           # Mode definitions, slider labels, live inkParams state
 │   ├── noiseTexture.ts     # 256x256 tileable 4-channel gradient noise texture
 │   ├── program.ts          # WebGL2 shader compilation and uniform lookup cache
-│   ├── shaders.ts          # Shared GLSL preamble + 6 transition fragment shaders
+│   ├── shaders.ts          # Shared GLSL preamble + 20 transition fragment shaders (6 classic + 8 organic + 6 spectacular)
 │   └── renderer.ts         # WebGL2 context, textures, ping-pong composite FBOs
 ├── ui/
 │   ├── theme.ts            # Light/dark dataset.theme helpers

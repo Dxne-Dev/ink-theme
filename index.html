@@ -7,7 +7,17 @@
     <meta name="color-scheme" content="light dark" />
     <title>Dxne-Dev — Développeur Web &amp; Interfaces</title>
     <meta name="description" content="Dxne-Dev conçoit des applications web rapides, des shaders WebGL2 interactifs et des interfaces soignées." />
-    <!-- Paint the correct background before any JS/CSS arrives: no white flash. -->
+    <!-- Keep this key in sync with src/ui/theme.ts. Run before paint to avoid a theme flash. -->
+    <script>
+      (() => {
+        let saved = null;
+        try { saved = localStorage.getItem('ink-theme:theme:v1'); } catch {}
+        const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = saved === 'light' || saved === 'dark'
+          ? saved
+          : systemDark ? 'dark' : 'light';
+      })();
+    </script>
     <style>
       html[data-theme='light'] { background: #f6f4ef; }
       html[data-theme='dark'] { background: #0b0b0f; }
