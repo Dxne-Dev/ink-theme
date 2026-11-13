@@ -22,7 +22,9 @@ export type TransitionMode =
   | 'prism'
   | 'shatter'
   | 'plasma'
-  | 'glitch';
+  | 'glitch'
+  | 'fireworks'
+  | 'chrome';
 
 export interface ModeSliderLabels {
   tendril: string;
@@ -259,6 +261,28 @@ export const TRANSITION_MODES: readonly ModeMeta[] = [
       drift: 'Flicker',
     },
   },
+  {
+    id: 'fireworks',
+    label: 'Fireworks Burst',
+    shortLabel: 'Fireworks',
+    sliders: {
+      tendril: 'Burst size',
+      noiseScale: 'Spark spread',
+      softness: 'Trail softness',
+      drift: 'Fall speed',
+    },
+  },
+  {
+    id: 'chrome',
+    label: 'Liquid Chrome',
+    shortLabel: 'Chrome',
+    sliders: {
+      tendril: 'Mercury flow',
+      noiseScale: 'Chrome grain',
+      softness: 'Melt softness',
+      drift: 'Liquid speed',
+    },
+  },
 ];
 
 export const MODE_BY_ID: Record<TransitionMode, ModeMeta> = {
@@ -282,6 +306,8 @@ export const MODE_BY_ID: Record<TransitionMode, ModeMeta> = {
   shatter: TRANSITION_MODES[17]!,
   plasma: TRANSITION_MODES[18]!,
   glitch: TRANSITION_MODES[19]!,
+  fireworks: TRANSITION_MODES[20]!,
+  chrome: TRANSITION_MODES[21]!,
 };
 
 export function isTransitionMode(value: string): value is TransitionMode {
