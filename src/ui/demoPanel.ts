@@ -77,6 +77,7 @@ export class DemoPanel {
   private readonly sliderLabels = new Map<SliderKey, HTMLElement>();
   private copyTimer = 0;
   private showMarker: boolean;
+  private promptInput: HTMLInputElement | null = null;
 
   constructor(ink: InkTransition, opts: PanelOptions) {
     this.ink = ink;
@@ -93,6 +94,7 @@ export class DemoPanel {
       <label class="demo-dock__label" for="transition-mode-select">Mode</label>
       <select class="demo-dock__select" id="transition-mode-select" name="transition-mode" aria-label="Transition effect"></select>
       <button type="button" class="demo-dock__btn demo-dock__btn--accent" data-dock-toggle>Switch</button>
+      <button type="button" class="demo-dock__btn" data-picker-open title="Picker (P)">Picker</button>
       <button type="button" class="demo-dock__btn" data-dock-open title="Open controls (D)">Controls</button>
     `;
 
@@ -158,8 +160,12 @@ export class DemoPanel {
           <button type="button" class="demo-panel__copy-btn" data-copy>Copy</button>
         </div>
       </div>
-      <p class="demo-panel__keys"><kbd>1</kbd>–<kbd>6</kbd> / <kbd>M</kbd> mode · <kbd>T</kbd> switch · <kbd>R</kbd> replay · <kbd>D</kbd> panel</p>
+      <p class="demo-panel__keys"><kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> / <kbd>M</kbd> mode · <kbd>T</kbd> switch · <kbd>R</kbd> replay · <kbd>D</kbd> panel · <kbd>P</kbd> picker</p>
     `;
+
+    // Panel is English inside a French page; declare its language for assistive tech.
+    el.lang = 'en';
+    dock.lang = 'en';
 
     const modes = el.querySelector<HTMLElement>('.demo-panel__modes');
     for (const [index, m] of TRANSITION_MODES.entries()) {
@@ -167,11 +173,28 @@ export class DemoPanel {
       btn.type = 'button';
       btn.className = 'demo-panel__mode-btn';
       btn.setAttribute('role', 'radio');
+      btn.tabIndex = index === 0 ? 0 : -1;
       btn.innerHTML = `<span class="demo-panel__mode-num">${index + 1}</span><span>${m.label}</span>`;
       btn.addEventListener('click', () => this.setMode(m.id));
       modes?.append(btn);
       this.modeButtons.set(m.id, btn);
     }
+    modes?.addEventListener('keydown', (event) => {
+      const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+      if (!keys.includes(event.key)) return;
+      event.preventDefault();
+      const ids = [...this.modeButtons.keys()];
+      const current = ids.indexOf(inkParams.mode);
+      let next = current;
+      if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = ids.length - 1;
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (current - 1 + ids.length) % ids.length;
+      else next = (current + 1) % ids.length;
+      const id = ids[next];
+      if (!id) return;
+      this.setMode(id);
+      this.modeButtons.get(id)?.focus();
+    });
 
     const sliders = el.querySelector<HTMLElement>('.demo-panel__sliders');
     for (const s of SLIDERS) sliders?.append(this.slider(s));
@@ -182,6 +205,7 @@ export class DemoPanel {
       slowmo.addEventListener('change', () => {
         this.ink.setTimeScale(slowmo.checked ? SLOW_MO : 1);
         this.save();
+        this.syncPromptField();
       });
     }
 
@@ -216,6 +240,7 @@ export class DemoPanel {
     this.el = el;
     this.syncModeUI();
     this.refresh();
+    this.syncPromptField();
   }
 
   get isOpen(): boolean {
@@ -297,6 +322,16 @@ export class DemoPanel {
   /** Re-sync controls that depend on transition state. */
   refresh(): void {
     this.replayButton.disabled = this.ink.lastClick === null;
+    this.syncPromptField();
+  }
+
+  private syncPromptField(): void {
+    if (!this.promptInput) {
+      this.promptInput = this.el.querySelector<HTMLInputElement>('#demo-prompt-field');
+    }
+    if (this.promptInput) {
+      this.promptInput.value = this.buildPrompt();
+    }
   }
 
   private syncModeUI(): void {
@@ -307,11 +342,13 @@ export class DemoPanel {
       const active = id === mode;
       btn.classList.toggle('is-active', active);
       btn.setAttribute('aria-checked', String(active));
+      btn.tabIndex = active ? 0 : -1;
     }
     this.setLabel('tendril', meta.sliders.tendril);
     this.setLabel('noiseScale', meta.sliders.noiseScale);
     this.setLabel('softness', meta.sliders.softness);
     this.setLabel('drift', meta.sliders.drift);
+    this.syncPromptField();
   }
 
   private bindSwitch(button: Element | null): void {
@@ -348,6 +385,7 @@ export class DemoPanel {
       inkParams[def.key] = v; // read every frame by the renderer; duration applies next click
       output.textContent = def.format(v);
       this.save();
+      this.syncPromptField();
     });
     return row;
   }

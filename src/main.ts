@@ -3,6 +3,7 @@ import { inkParams, isTransitionMode, TRANSITION_MODES } from './gl/params';
 import { mountPage } from './page/mount';
 import { startAutoMode } from './ui/autoMode';
 import { DemoPanel, loadSettings } from './ui/demoPanel';
+import { Picker } from './ui/picker';
 import { InkTransition, SPREAD } from './ui/inkTransition';
 import { applyTheme, getTheme } from './ui/theme';
 
@@ -12,6 +13,7 @@ if (!app) throw new Error('#app root missing');
 mountPage(app);
 
 const toggle = document.querySelector<HTMLButtonElement>('#theme-toggle');
+// Theme already set before first paint by the early script in index.html; just sync ARIA.
 applyTheme(getTheme(), toggle);
 
 const canvas = document.createElement('canvas');
@@ -39,6 +41,18 @@ const panel = new DemoPanel(ink, {
   },
 });
 
+const picker = new Picker({
+  ink,
+  onSelect: (mode) => {
+    panel.setMode(mode);
+  },
+});
+
+// dock picker trigger (added inside DemoPanel)
+document.querySelector('[data-picker-open]')?.addEventListener('click', () => picker.toggle());
+// Labo “Explorer tous les motifs” button
+document.querySelector('[data-open-picker]')?.addEventListener('click', () => picker.open());
+
 toggle?.addEventListener('click', (e) => {
   // detail === 0 means a keyboard-activated click (Enter/Space): spread from the button.
   ink.toggle(e.detail === 0 ? undefined : { x: e.clientX, y: e.clientY });
@@ -50,9 +64,29 @@ const TEXT_ENTRY =
   'input:not([type="range"]):not([type="checkbox"]):not([type="button"]):not([readonly]), textarea, select, [contenteditable="true"]';
 
 window.addEventListener('keydown', (e) => {
+  // picker handles Esc sendiri; allow p to open even inside inputs? no — respect TEXT_ENTRY for most
+  if (e.key.toLowerCase() === 'p' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.repeat) {
+    const inPicker = document.querySelector('.picker:not([hidden])');
+    if (inPicker) {
+      // handled by picker itself (Esc)
+    } else {
+      const target = e.target;
+      if (!(target instanceof Element && target.closest(TEXT_ENTRY))) {
+        picker.toggle();
+        e.preventDefault();
+        return;
+      }
+    }
+  }
   if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
   const target = e.target;
   if (target instanceof Element && target.closest(TEXT_ENTRY)) return;
+
+  // if picker is open, let it manage keys (Esc already), don't trigger other shortcuts
+  if (!picker.el.hidden) {
+    if (e.key === 'Escape') { e.preventDefault(); picker.close(); }
+    return;
+  }
 
   switch (e.key.toLowerCase()) {
     case 't':
@@ -61,6 +95,9 @@ window.addEventListener('keydown', (e) => {
       break;
     case 'd':
       panel.toggle();
+      break;
+    case 'p':
+      picker.toggle();
       break;
     case 'r':
       ink.replay();
@@ -73,8 +110,14 @@ window.addEventListener('keydown', (e) => {
     case '3':
     case '4':
     case '5':
-    case '6': {
-      const mode = TRANSITION_MODES[Number(e.key) - 1];
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case '0': {
+      // 1..9 => index 0..8, 0 => index 9 (10th mode). Beyond that use M to cycle.
+      const idx = e.key === '0' ? 9 : Number(e.key) - 1;
+      const mode = TRANSITION_MODES[idx];
       if (mode) panel.setMode(mode.id);
       break;
     }
@@ -91,6 +134,23 @@ if (params.get('auto') === '1') {
 // ?panel=1 opens the controls on load (phones have no "D" key).
 if (params.get('panel') === '1') {
   panel.toggle();
+}
+
+document.addEventListener('click', (e) => {
+  const target = (e.target as Element | null)?.closest<HTMLButtonElement>('[data-open-controls]');
+  if (!target) return;
+  if (!panel.isOpen) panel.toggle();
+  target.setAttribute('aria-expanded', String(panel.isOpen));
+});
+
+// Keep Labo button state in sync when panel toggled via keyboard.
+const labButton = document.querySelector<HTMLButtonElement>('[data-open-controls]');
+if (labButton) {
+  const origToggle = panel.toggle.bind(panel);
+  panel.toggle = () => {
+    origToggle();
+    labButton.setAttribute('aria-expanded', String(panel.isOpen));
+  };
 }
 
 if (import.meta.env.DEV) {

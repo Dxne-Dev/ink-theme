@@ -72,6 +72,10 @@ export async function capturePage(theme: Theme, scale: number, maxTextureSize: n
     logging: false,
     useCORS: true,
     onclone: (doc) => {
+      // A user may toggle while a capture is being prepared. Never bake a running
+      // CSS fallback transition into the cloned snapshot.
+      doc.documentElement.classList.remove('theme-fade');
+      doc.documentElement.style.removeProperty('--theme-fade');
       doc.documentElement.dataset.theme = theme;
       // The live toggle is drawn above the overlay, so leave a hole for it. `visibility`
       // (not data-html2canvas-ignore) keeps its box in the layout so the nav doesn't shift.
