@@ -2,7 +2,7 @@
 
 Real-time WebGL2 & GLSL light/dark theme transitions powered by full-document GPU snapshots, GSAP choreography, and a live interactive control panel.
 
-Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **6 shader transition modes**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
+Built by **Dxne-Dev** on top of the original WebGL2 ink-bleed prototype (`codemure-official/ink-bleed-theme-changer`), extended with **14 shader transition modes (6 classic + 8 organic)**, a compact **mode selector**, and a one-click **AI integration prompt** generator.
 
 Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
 
@@ -18,6 +18,14 @@ Live demo (GitHub Pages): https://dxne-dev.github.io/ink-theme/
 | 4 | `halftone` | **Halftone Sweep** | Editorial print-screen dot grid growing across an organic wave with RGB risograph split. |
 | 5 | `eclipse` | **Solar Eclipse** | Expanding umbral shadow with seam-free animated corona rays and twilight rim. |
 | 6 | `crystal` | **Frost & Crystal** | Voronoi polygonal shards flipping facet-by-facet with per-shard prism refraction and icy bevels. |
+| 7 | `veil` | **Silk Veil** | Translucent silk drape unfolding with diagonal folds and luminous sheen. |
+| 8 | `tide` | **Tide Wash** | Ocean tide rolling in with frothy foam crest and wet-sand darkening. |
+| 9 | `smoke` | **Smoke Curl** | Incense-like plume curling upward with soft billowing and smoky veil. |
+| 10 | `marble` | **Marble Vein** | Calacatta marble sweeping with mineral veins and polished highlight. |
+| 11 | `drip` | **Honey Drip** | Viscous honey dripping down with gravity tendrils and amber glint. |
+| 12 | `bloom` | **Petal Bloom** | Floral petals unfurling radially with soft curl and petal veins. |
+| 13 | `aura` | **Aura Glow** | Aurora borealis-like luminous veil with pulsing halo and shimmer. |
+| 14 | `storm` | **Storm Cloud** | Roiling storm front with turbulent billows and distant lightning flash. |
 
 ---
 
@@ -60,14 +68,14 @@ MIT — see [LICENSE](LICENSE).
 ## Controls, Shortcuts & URL Flags
 
 ### Keyboard Shortcuts
-- `1` – `6` : Select transition mode directly
+- `1` – `9`, `0` : Select transition mode directly (1-9 → 1-9, 0 → 10, `M` cycles beyond)
 - `M` : Cycle to the next transition mode
 - `T` : Toggle light/dark theme from the toggle button
 - `R` : Replay the last click (same origin point and random seed) using the active mode
 - `D` : Expand or collapse the full control panel
 
 ### URL Query Parameters
-- `?mode=ember` — Pre-select a mode (`ink`, `ripple`, `ember`, `halftone`, `eclipse`, `crystal`)
+- `?mode=ember` — Pre-select a mode (`ink`, `ripple`, `ember`, `halftone`, `eclipse`, `crystal`, `veil`, `tide`, `smoke`, `marble`, `drip`, `bloom`, `aura`, `storm`)
 - `?panel=1` — Open the full control panel on load
 - `?auto=1` — Demo mode (triggers a toggle from a random viewport coordinate every ~3 s)
 - `?clean=1` — Hide the collapsed bottom-left dock for clean screen recordings
@@ -109,7 +117,7 @@ src/
 │   ├── params.ts           # Mode definitions, slider labels, live inkParams state
 │   ├── noiseTexture.ts     # 256x256 tileable 4-channel gradient noise texture
 │   ├── program.ts          # WebGL2 shader compilation and uniform lookup cache
-│   ├── shaders.ts          # Shared GLSL preamble + 6 transition fragment shaders
+│   ├── shaders.ts          # Shared GLSL preamble + 14 transition fragment shaders (6 classic + 8 organic)
 │   └── renderer.ts         # WebGL2 context, textures, ping-pong composite FBOs
 ├── ui/
 │   ├── theme.ts            # Light/dark dataset.theme helpers

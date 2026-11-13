@@ -175,10 +175,11 @@ test('no fatal console errors during the six modes and rapid interruptions', asy
   });
   await page.goto('/?gl=1&panel=1');
   await page.waitForTimeout(700);
-  // Wait until snapshots are ready if possible; otherwise just exercise the fallback
-  for (let i = 0; i < 6; i++) {
+  // Iterate over all available modes (6 classic + 8 organic)
+  const modeCount = await page.locator('.demo-panel__mode-btn').count();
+  for (let i = 0; i < modeCount; i++) {
     await page.locator('.demo-panel__mode-btn').nth(i).click();
-    await page.waitForTimeout(120);
+    await page.waitForTimeout(100);
   }
   // Rapid triple toggle
   const toggle = page.locator('#theme-toggle');
@@ -227,6 +228,21 @@ test('supportsMode gate falls back to CSS when a shader is unavailable', async (
   const theme = await page.evaluate(() => document.documentElement.dataset.theme);
   expect(['light', 'dark']).toContain(theme);
   await expect(page.locator('.ink-canvas.is-active')).toHaveCount(0);
+});
+
+test('all 14 organic modes are exposed in the panel and dock', async ({ page }) => {
+  await page.goto('/?gl=1&panel=1');
+  const btnCount = await page.locator('.demo-panel__mode-btn').count();
+  expect(btnCount).toBe(14);
+  const optCount = await page.locator('.demo-dock__select option').count();
+  expect(optCount).toBe(14);
+  // Each mode should be selectable via ?mode= param without error
+  for (const mode of ['veil','tide','smoke','marble','drip','bloom','aura','storm']) {
+    await page.goto(`/?gl=1&mode=${mode}`);
+    await page.waitForTimeout(200);
+    const theme = await page.evaluate(() => document.documentElement.dataset.theme);
+    expect(['light','dark']).toContain(theme);
+  }
 });
 
 test('README mentions license and docs point to real files', async ({ page }) => {

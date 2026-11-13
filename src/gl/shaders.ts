@@ -591,6 +591,478 @@ void main() {
 }
 `;
 
+
+/**
+ * 7. Silk Veil: translucent silk fabric unfolding with diagonal folds and soft sheen.
+ * Organic drape, gentle sway, luminous silk highlight along the leading edge.
+ */
+const VEIL_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  vec2 dir = uSeedRot * (d < 1e-3 ? vec2(1.0, 0.0) : rel / d);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 2.0, 2.0);
+
+  // Silk veil has a wider, softer leading edge
+  float inner = R * 0.72 + cleanup - soft * 3.0 - 12.0;
+  float outer = R * 1.35 + cleanup + soft * 3.0 + 24.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / uRef;
+  vec2 q = p * (2.2 * ns) + uSeed;
+  // gentle undulation of the veil surface
+  float warp = fbm3(q + vec2(0.18 * t, -0.12 * t)) * 0.45;
+  float lobes = gnoise(dir * 1.5 + uSeed.yx * 0.5) * 0.5 + gnoise(dir * 3.0 + 5.7) * 0.25;
+  float reach = 1.0 + 0.14 * lobes + 0.18 * warp;
+  float f = d - R * reach - cleanup;
+
+  // Diagonal silk folds — frequency and amplitude tied to sliders
+  vec2 foldDir = normalize(vec2(0.68, -0.73));
+  float foldPhase = dot(rel, foldDir) * 0.035 * ns + fbm3(p * 1.8 * ns + vec2(0.22 * t)) * 2.2;
+  float foldFreq = 1.1 + uTendril * 0.6;
+  float folds = sin(foldPhase * foldFreq) * (5.0 + uTendril * 4.0) * smoothstep(0.0, 60.0, d);
+  // secondary finer creases
+  folds += sin(foldPhase * foldFreq * 2.3 + 1.4) * (2.0 + uTendril) * 0.35;
+  f += folds;
+
+  // subtle fibre grain along the silk
+  f += gnoise2(css * 0.38 + uSeed * 8.0) * 0.8;
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // luminous silk sheen at the frontier
+  float sheen = exp(-pow((f + soft * 0.2) / max(soft, 1.0), 2.0)) * cov;
+  vec3 silkCol = uToDark > 0.5 ? vec3(1.0, 0.96, 0.88) : vec3(0.98, 0.97, 1.0);
+  col = mix(col, silkCol, sheen * 0.32 * clamp(uTendril, 0.3, 1.8));
+
+  // faint secondary highlight trailing behind
+  float trail = exp(-pow((f + soft * 1.8) / max(soft * 1.6, 1.0), 2.0)) * (1.0 - cov) * 0.18;
+  col += silkCol * trail * 0.35;
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 8. Tide Wash: ocean tide rolling in with frothy foam crest and wet-sand darkening.
+ */
+const TIDE_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  vec2 dir = uSeedRot * (d < 1e-3 ? vec2(1.0, 0.0) : rel / d);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 2.8, 2.5);
+
+  float inner = R * 0.62 + cleanup - soft * 2.0 - 10.0;
+  float outer = R * 1.42 + cleanup + soft * 2.5 + 20.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / uRef;
+  // swell undulation — long wavelength
+  vec2 swellQ = p * (1.4 * ns) + uSeed + vec2(0.14 * t, -0.08 * t);
+  float swell = fbm3(swellQ) * 0.55 + fbm3(swellQ * 1.9 + 4.2) * 0.25;
+  // shorter chop
+  float chop = gnoise(dir * 2.2 + vec2(0.2 * t)) * 0.35 + gnoise2(p * 3.5 * ns + vec2(t * 0.3)) * 0.2;
+  float reach = 1.0 + 0.12 * swell + 0.08 * chop;
+  float f = d - R * reach - cleanup;
+
+  // foam texture — bubbly cellular noise just ahead/behind the front
+  float foamPhase = fbm3(p * (6.0 * ns) + vec2(t * 0.25, t * 0.18));
+  float foamBand = exp(-pow(f / max(soft * 0.7, 1.0), 2.0));
+  float foam = smoothstep(0.35, 0.85, foamPhase * 0.5 + 0.5) * foamBand * clamp(uTendril, 0.2, 2.0);
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+
+  // wet sand darkening just ahead of tide — only when revealing light->dark? use generic
+  float wetMask = (1.0 - smoothstep(0.0, soft * 1.6, f)) * step(0.0, f) * (1.0 - cov) * 0.5;
+  from = mix(from, from * 0.72 + vec3(0.04, 0.06, 0.08) * 0.18, wetMask);
+
+  vec3 col = mix(from, to, cov);
+
+  // foam crest — bright, slightly warm
+  vec3 foamCol = vec3(0.98, 0.96, 0.92);
+  col = mix(col, foamCol, foam * 0.62);
+  // subtle translucent wash behind foam
+  col = mix(col, to * 0.5 + from * 0.5, foamBand * 0.08 * (1.0 - cov));
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 9. Smoke Curl: incense-like plume curling upward with soft billowing.
+ */
+const SMOKE_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  vec2 rawDir = d < 1e-3 ? vec2(0.0, -1.0) : rel / d;
+  vec2 dir = uSeedRot * rawDir;
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 2.5, 2.0);
+
+  float inner = R * 0.58 + cleanup - soft * 2.5 - 16.0;
+  float outer = R * 1.48 + cleanup + soft * 2.5 + 32.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / uRef;
+  // smoke rises — bias upward in CSS space (y decreases upward on screen? devPx y flipped but css y increases downward)
+  // so smoke rises toward -y in css
+  float rise = (uCenter.y - css.y) * 0.004 * uDrift;
+  vec2 driftQ = p * (2.0 * ns) + uSeed + vec2(0.12 * t + rise * 0.5, -0.18 * t + rise);
+  vec2 curlWarp = vec2(fbm3(driftQ + 1.3), fbm3(driftQ + 5.7)) * 0.85;
+  float billow = fbm4(p * (1.8 * ns) + curlWarp + vec2(0.0, 0.12 * t));
+  float curl = gnoise(dir * 2.5 + vec2(0.25 * t)) * 0.4 + gnoise2(p * 3.2 * ns + vec2(t * 0.2)) * 0.3;
+
+  float reach = 1.0 + 0.18 * billow + 0.10 * curl;
+  // smoke tends to elongate upward — stretch y slightly
+  float stretch = clamp((uCenter.y - css.y) * 0.0015 * uTendril, -0.12, 0.18);
+  reach += stretch;
+
+  float f = d - R * reach - cleanup;
+  // add wispy tendrils
+  float wisps = fbm3(p * (4.5 * ns) + curlWarp * 1.8 + vec2(0.0, t * 0.35)) * 6.0 * uTendril * 0.18;
+  f += wisps * smoothstep(0.0, 80.0, d);
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // smoky veil — translucent grey haze trailing the front
+  float haze = exp(-pow(max(f, 0.0) / max(soft * 2.2, 1.0), 2.0)) * (1.0 - cov) * 0.45 * clamp(uTendril, 0.3, 2.0);
+  vec3 smokeCol = uToDark > 0.5 ? vec3(0.52, 0.54, 0.58) : vec3(0.88, 0.86, 0.82);
+  col = mix(col, smokeCol, haze * 0.55);
+  // inner darker core
+  float core = exp(-pow(f / max(soft * 0.8, 1.0), 2.0)) * cov * 0.12;
+  col -= core * 0.18;
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 10. Marble Vein: Calacatta marble with sweeping mineral veins and soft polish.
+ */
+const MARBLE_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  vec2 dir = uSeedRot * (d < 1e-3 ? vec2(1.0, 0.0) : rel / d);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift * 0.35;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.8, 1.5);
+
+  float inner = R * 0.68 + cleanup - soft * 2.0 - 10.0;
+  float outer = R * 1.38 + cleanup + soft * 2.5 + 18.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / uRef;
+  // marble grain — layered warping
+  vec2 q = p * (1.9 * ns) + uSeed;
+  vec2 warb = vec2(fbm3(q + vec2(0.12*t, -0.08*t)), fbm3(q + vec2(4.2, 1.1) + vec2(-0.09*t, 0.14*t))) * 0.9;
+  float grain = fbm5(q * 1.6 + warb * 1.4);
+  float veins = sin((p.x * 2.8 + p.y * 1.9) * ns * 2.2 + grain * 3.5 + t * 0.6 + uSeed.x * 4.0);
+  veins = pow(abs(veins), 0.7 + uTendril * 0.35);
+
+  float lobes = gnoise(dir * 1.6 + uSeed.yx * 0.4) * 0.35 + fbm3(dir * 2.8 + 3.3) * 0.2;
+  float reach = 1.0 + 0.10 * lobes + 0.14 * grain;
+  // marble veins create thin peninsulas — modulate front with vein ridges
+  float veinRidge = (1.0 - veins) * 10.0 * uTendril * 0.35 * smoothstep(0.0, 90.0, d);
+  float f = d - R * reach - cleanup - veinRidge;
+
+  // secondary micro-veins
+  float micro = sin((p.x * 5.0 - p.y * 2.2) * ns * 1.5 + grain * 2.0);
+  f += micro * 1.2 * smoothstep(0.0, 70.0, d) * clamp(uTendril, 0.2, 1.5);
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // marble polish highlight along vein ridges
+  float polish = exp(-pow((f + soft * 0.3) / max(soft, 1.0), 2.0)) * cov * (0.45 + veins * 0.35) * clamp(uTendril, 0.2, 1.8);
+  vec3 veinCol = uToDark > 0.5 ? vec3(0.62, 0.58, 0.66) : vec3(0.42, 0.42, 0.46);
+  col = mix(col, veinCol, polish * 0.28);
+  // subtle warm undertone in the marble
+  col = mix(col, col * vec3(1.02, 1.0, 0.96), polish * 0.18);
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 11. Honey Drip: viscous honey/golden syrup dripping down with gravity tendrils.
+ */
+const DRIP_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.6, 1.2);
+
+  float inner = R * 0.60 + cleanup - soft * 2.0 - 14.0;
+  float outer = R * 1.55 + cleanup + soft * 2.5 + 36.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / uRef;
+  vec2 q = p * (2.4 * ns) + uSeed;
+  float flow = fbm3(q + vec2(0.0, 0.15 * t));
+  float wobble = gnoise((d < 1e-3 ? vec2(1.0, 0.0) : rel / d) + uSeed * 0.6 + vec2(0.15 * t)) * 0.35;
+
+  // gravity — drips elongate downward (positive css y)
+  float down = max(0.0, rel.y) / max(uRef, 1.0);
+  float gravityStrength = (0.18 + uTendril * 0.22) * smoothstep(0.0, 0.6, down) * R;
+  float dripPhase = css.x * 0.045 * ns + uSeed.x * 5.0 + flow * 2.0;
+  float dripMask = pow(abs(sin(dripPhase)), 2.5 + uTendril) * 0.85 + pow(abs(sin(dripPhase * 1.7 + 1.2)), 6.0) * 0.45;
+  // drips only matter below center and get longer with distance/time
+  float dripLen = gravityStrength * dripMask * (0.7 + down * 1.4) * (1.0 + flow * 0.4);
+  // drip speed — grow with time
+  dripLen *= (1.0 + uLinear * 0.6 + t * 0.08 * clamp(uTendril, 0.2, 1.6));
+
+  float reach = 1.0 + 0.10 * flow + 0.06 * wobble;
+  float f = d - R * reach - cleanup - dripLen;
+
+  // secondary droplets along drip tips
+  float dropN = hash21(floor(css * 0.08 + vec2(t * 0.5, t * 0.8) + uSeed * 3.0));
+  float drops = step(0.78, dropN) * step(f, 6.0) * step(0.0, f) * smoothstep(0.0, 0.4, down);
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // honey amber highlight along the drip edge
+  float honey = exp(-pow((f + soft * 0.4) / max(soft, 1.0), 2.0)) * cov * (0.7 + dripMask * 0.5);
+  vec3 honeyCol = vec3(0.98, 0.72, 0.18);
+  honeyCol = mix(honeyCol, vec3(1.0, 0.88, 0.45), uToDark);
+  col = mix(col, honeyCol, honey * 0.38 * clamp(uTendril, 0.3, 2.0));
+  // droplet glint
+  col += vec3(1.0, 0.95, 0.7) * drops * 0.55 * cov;
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 12. Petal Bloom: floral petals unfurling radially with soft curl.
+ */
+const BLOOM_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  vec2 dir = uSeedRot * (d < 1e-3 ? vec2(1.0, 0.0) : rel / d);
+  float ang = atan(rel.y, rel.x);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 1.9, 1.5);
+
+  float inner = R * 0.55 + cleanup - soft * 2.0 - 12.0;
+  float outer = R * 1.50 + cleanup + soft * 2.5 + 28.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  // petal count driven by tendril (5 to ~11 petals)
+  float petalCount = 5.0 + floor(clamp(uTendril, 0.0, 2.5) * 2.4);
+  float normAng = ang * 0.15915494; // / (2pi)
+  float petalPhase = fract(normAng * petalCount + uSeed.x * 0.4 + t * 0.02 * uTendril);
+  // petal shape — pointed ellipse
+  float petalShape = pow(abs(sin(petalPhase * 3.14159)), 0.9 + 0.2 * ns);
+  petalShape = pow(petalShape, 1.2);
+
+  // curl along petal length — tips curl back
+  float along = d / max(R, 1.0);
+  float curl = sin(along * 3.14159 * 0.85 + petalPhase * 0.8) * 0.22 * ns;
+
+  float baseNoise = fbm3(rel / uRef * (2.0 * ns) + uSeed + vec2(0.1 * t));
+  float reach = 0.85 + petalShape * 0.38 + curl * 0.12 + baseNoise * 0.06;
+  float f = d - R * reach - cleanup;
+
+  // soft petal edge irregularity
+  f += gnoise2(petalPhase * 4.0 + vec2(along * 3.0)) * 1.1;
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // petal vein highlight
+  float vein = exp(-pow((f + soft * 0.6) / max(soft * 0.9, 1.0), 2.0)) * cov * (0.5 + petalShape * 0.5);
+  vec3 petalCol = uToDark > 0.5 ? vec3(0.96, 0.62, 0.78) : vec3(0.98, 0.55, 0.68);
+  col = mix(col, petalCol, vein * 0.22 * clamp(uTendril * 0.5, 0.2, 1.2));
+  // soft center bloom
+  float centerGlow = exp(-pow(d / max(R * 0.35, 1.0), 2.0)) * (1.0 - cov) * 0.08;
+  col += petalCol * centerGlow * 0.35;
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 13. Aura Glow: aurora borealis-like luminous veil with pulsing halo.
+ */
+const AURA_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  vec2 dir = uSeedRot * (d < 1e-3 ? vec2(1.0, 0.0) : rel / d);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 2.4, 2.0);
+
+  float inner = R * 0.60 + cleanup - soft * 2.5 - 14.0;
+  float outer = R * 1.60 + cleanup + soft * 2.5 + 40.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / uRef;
+  float ang = atan(rel.y, rel.x);
+  // aurora curtain folds — vertical curtains wrapping radially
+  float curtains = sin(ang * (3.0 + uTendril) + p.y * 4.0 * ns + t * 0.7) * 0.5 + 0.5;
+  curtains = pow(curtains, 1.1 + ns * 0.25);
+  float warp = fbm4(p * (2.0 * ns) + uSeed + vec2(0.12 * t, -0.10 * t));
+  float reach = 1.0 + 0.16 * warp + 0.11 * (curtains - 0.5);
+  float f = d - R * reach - cleanup;
+
+  // shimmer along curtains
+  float shimmer = gnoise2(p * (5.0 * ns) + vec2(t * 0.35, t * 0.22)) * 4.0 * curtains;
+  f += shimmer * 0.6 * smoothstep(0.0, 100.0, d);
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // aurora glow — colorful halo straddling the edge
+  float glow = exp(-pow(max(f, 0.0) / max(soft * 1.8, 1.0), 2.0)) * smoothstep(-soft * 0.5, soft, f + soft) * clamp(uTendril, 0.3, 2.0);
+  float pulse = 0.85 + 0.15 * sin(t * 1.8 + curtains * 6.0);
+  vec3 auroraA = uToDark > 0.5 ? vec3(0.22, 0.88, 0.72) : vec3(0.18, 0.78, 0.62);
+  vec3 auroraB = uToDark > 0.5 ? vec3(0.48, 0.42, 0.92) : vec3(0.72, 0.38, 0.88);
+  vec3 aurora = mix(auroraA, auroraB, curtains * 0.6 + warp * 0.2 + 0.2);
+  col = mix(col, aurora, glow * 0.42 * pulse);
+  // inner rim light
+  float rim = exp(-pow((f + soft * 0.3) / max(soft * 0.85, 1.0), 2.0)) * cov * 0.55;
+  col = mix(col, aurora * 1.6 + vec3(0.9), rim * 0.22);
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
+/**
+ * 14. Storm Cloud: roiling storm front with turbulent billows and distant lightning flash.
+ */
+const STORM_MAIN = /* glsl */ `
+void main() {
+  vec2 devPx = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 css = devPx / uCanvasScale;
+  vec2 rel = css - uCenter;
+  float d = length(rel);
+  vec2 dir = uSeedRot * (d < 1e-3 ? vec2(1.0, 0.0) : rel / d);
+  float R = uRadius;
+  float cleanup = uCleanup;
+  float t = uTime * uDrift;
+  float ns = uNoiseScale;
+  float soft = max(uSoftness * 2.2, 1.8);
+
+  float inner = R * 0.58 + cleanup - soft * 2.5 - 18.0;
+  float outer = R * 1.52 + cleanup + soft * 2.5 + 36.0;
+  if (d < inner) { outColor = vec4(sampleDoc(uTo, uToSize, uToMap, devPx), 1.0); return; }
+  if (d > outer) { outColor = vec4(sampleDoc(uFrom, uFromSize, uFromMap, devPx), 1.0); return; }
+
+  vec2 p = rel / uRef;
+  // large-scale storm circulation
+  vec2 swirl = vec2(-rel.y, rel.x) * 0.0012 * ns;
+  vec2 q = p * (1.8 * ns) + uSeed + swirl * t * 0.6;
+  float turb = fbm5(q + vec2(0.14 * t, -0.11 * t));
+  float billow = fbm4(q * 1.7 + vec2(3.2, -1.8) + vec2(0.08 * t));
+  float gust = gnoise(dir * 2.0 + vec2(0.22 * t)) * 0.4 + gnoise2(p * 3.0 * ns + vec2(t * 0.25)) * 0.25;
+
+  float reach = 1.0 + 0.20 * turb + 0.12 * billow + 0.08 * gust;
+  float f = d - R * reach - cleanup;
+
+  // turbulent edge breakup
+  float breakup = fbm3(p * (3.8 * ns) + turb * 1.2 + vec2(0.0, t * 0.18)) * 8.0 * uTendril * 0.22;
+  f += breakup * smoothstep(0.0, 90.0, d);
+
+  float cov = 1.0 - smoothstep(-soft, soft, f);
+  if (uLinear >= 0.995) cov = 1.0;
+
+  vec3 from = sampleDoc(uFrom, uFromSize, uFromMap, devPx);
+  vec3 to = sampleDoc(uTo, uToSize, uToMap, devPx);
+  vec3 col = mix(from, to, cov);
+
+  // storm shading — dark billowing underside
+  float shade = exp(-pow(max(f, 0.0) / max(soft * 2.0, 1.0), 2.0)) * (0.5 + turb * 0.3) * (1.0 - cov) * clamp(uTendril, 0.4, 2.0);
+  vec3 stormCol = uToDark > 0.5 ? vec3(0.28, 0.30, 0.38) : vec3(0.42, 0.40, 0.48);
+  col = mix(col, stormCol, shade * 0.35);
+  // lightning flash — rare bright crack along turbulent ridges
+  float flashN = fbm3(p * (9.0 * ns) + vec2(t * 0.6));
+  float flash = pow(max(0.0, flashN - 0.42), 2.2) * exp(-pow(f / max(soft, 1.0), 2.0)) * cov * uTendril * 0.6;
+  flash *= 0.6 + 0.4 * sin(t * 7.0 + hash21(uSeed) * 20.0);
+  col = mix(col, vec3(0.95, 0.96, 1.0), flash * 0.72);
+
+  outColor = vec4(col, 1.0);
+}
+`;
+
 const FRAG_BODIES: Record<TransitionMode, string> = {
   ink: INK_MAIN,
   ripple: RIPPLE_MAIN,
@@ -598,6 +1070,14 @@ const FRAG_BODIES: Record<TransitionMode, string> = {
   halftone: HALFTONE_MAIN,
   eclipse: ECLIPSE_MAIN,
   crystal: CRYSTAL_MAIN,
+  veil: VEIL_MAIN,
+  tide: TIDE_MAIN,
+  smoke: SMOKE_MAIN,
+  marble: MARBLE_MAIN,
+  drip: DRIP_MAIN,
+  bloom: BLOOM_MAIN,
+  aura: AURA_MAIN,
+  storm: STORM_MAIN,
 };
 
 export function buildFragmentShader(mode: TransitionMode): string {

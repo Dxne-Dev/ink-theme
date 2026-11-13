@@ -159,7 +159,7 @@ export class DemoPanel {
           <button type="button" class="demo-panel__copy-btn" data-copy>Copy</button>
         </div>
       </div>
-      <p class="demo-panel__keys"><kbd>1</kbd>–<kbd>6</kbd> / <kbd>M</kbd> mode · <kbd>T</kbd> switch · <kbd>R</kbd> replay · <kbd>D</kbd> panel</p>
+      <p class="demo-panel__keys"><kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> / <kbd>M</kbd> mode · <kbd>T</kbd> switch · <kbd>R</kbd> replay · <kbd>D</kbd> panel</p>
     `;
 
     // Panel is English inside a French page; declare its language for assistive tech.

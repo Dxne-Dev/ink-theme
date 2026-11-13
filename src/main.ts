@@ -74,8 +74,14 @@ window.addEventListener('keydown', (e) => {
     case '3':
     case '4':
     case '5':
-    case '6': {
-      const mode = TRANSITION_MODES[Number(e.key) - 1];
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case '0': {
+      // 1..9 => index 0..8, 0 => index 9 (10th mode). Beyond that use M to cycle.
+      const idx = e.key === '0' ? 9 : Number(e.key) - 1;
+      const mode = TRANSITION_MODES[idx];
       if (mode) panel.setMode(mode.id);
       break;
     }

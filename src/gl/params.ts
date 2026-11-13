@@ -1,6 +1,21 @@
 import type { Theme } from '../ui/theme';
 
-export type TransitionMode = 'ink' | 'ripple' | 'ember' | 'halftone' | 'eclipse' | 'crystal';
+export type TransitionMode =
+  | 'ink'
+  | 'ripple'
+  | 'ember'
+  | 'halftone'
+  | 'eclipse'
+  | 'crystal'
+  // organic extension — 8 new fluid motifs
+  | 'veil'
+  | 'tide'
+  | 'smoke'
+  | 'marble'
+  | 'drip'
+  | 'bloom'
+  | 'aura'
+  | 'storm';
 
 export interface ModeSliderLabels {
   tendril: string;
@@ -83,6 +98,94 @@ export const TRANSITION_MODES: readonly ModeMeta[] = [
       drift: 'Glint speed',
     },
   },
+  {
+    id: 'veil',
+    label: 'Silk Veil',
+    shortLabel: 'Veil',
+    sliders: {
+      tendril: 'Drape',
+      noiseScale: 'Fold scale',
+      softness: 'Silk softness',
+      drift: 'Sway',
+    },
+  },
+  {
+    id: 'tide',
+    label: 'Tide Wash',
+    shortLabel: 'Tide',
+    sliders: {
+      tendril: 'Foam',
+      noiseScale: 'Swell',
+      softness: 'Shore width',
+      drift: 'Current',
+    },
+  },
+  {
+    id: 'smoke',
+    label: 'Smoke Curl',
+    shortLabel: 'Smoke',
+    sliders: {
+      tendril: 'Plume',
+      noiseScale: 'Curl scale',
+      softness: 'Haze',
+      drift: 'Rise',
+    },
+  },
+  {
+    id: 'marble',
+    label: 'Marble Vein',
+    shortLabel: 'Marble',
+    sliders: {
+      tendril: 'Vein ink',
+      noiseScale: 'Grain',
+      softness: 'Polish',
+      drift: 'Flow',
+    },
+  },
+  {
+    id: 'drip',
+    label: 'Honey Drip',
+    shortLabel: 'Drip',
+    sliders: {
+      tendril: 'Drip length',
+      noiseScale: 'Viscosity',
+      softness: 'Edge width',
+      drift: 'Flow speed',
+    },
+  },
+  {
+    id: 'bloom',
+    label: 'Petal Bloom',
+    shortLabel: 'Bloom',
+    sliders: {
+      tendril: 'Petal count',
+      noiseScale: 'Petal curl',
+      softness: 'Bloom softness',
+      drift: 'Sway speed',
+    },
+  },
+  {
+    id: 'aura',
+    label: 'Aura Glow',
+    shortLabel: 'Aura',
+    sliders: {
+      tendril: 'Halo',
+      noiseScale: 'Aura detail',
+      softness: 'Glow width',
+      drift: 'Pulse',
+    },
+  },
+  {
+    id: 'storm',
+    label: 'Storm Cloud',
+    shortLabel: 'Storm',
+    sliders: {
+      tendril: 'Turbulence',
+      noiseScale: 'Cloud scale',
+      softness: 'Front softness',
+      drift: 'Wind',
+    },
+  },
 ];
 
 export const MODE_BY_ID: Record<TransitionMode, ModeMeta> = {
@@ -92,6 +195,14 @@ export const MODE_BY_ID: Record<TransitionMode, ModeMeta> = {
   halftone: TRANSITION_MODES[3]!,
   eclipse: TRANSITION_MODES[4]!,
   crystal: TRANSITION_MODES[5]!,
+  veil: TRANSITION_MODES[6]!,
+  tide: TRANSITION_MODES[7]!,
+  smoke: TRANSITION_MODES[8]!,
+  marble: TRANSITION_MODES[9]!,
+  drip: TRANSITION_MODES[10]!,
+  bloom: TRANSITION_MODES[11]!,
+  aura: TRANSITION_MODES[12]!,
+  storm: TRANSITION_MODES[13]!,
 };
 
 export function isTransitionMode(value: string): value is TransitionMode {
