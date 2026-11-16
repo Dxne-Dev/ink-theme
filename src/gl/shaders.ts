@@ -1583,7 +1583,7 @@ void main() {
   col += vec3(1.0,0.78,0.32) * ember * 1.1;
 
   // bright center flash for first burst
-  float centerFlash = exp(-pow(d/max(R*0.14,8.0),2.0)) * 1.2) * (1.0 - smoothstep(0.18,0.45,uLinear)) * 0.9;
+  float centerFlash = exp(-pow(d/max(R*0.14,8.0),2.0)) * 1.2 * (1.0 - smoothstep(0.18,0.45,uLinear)) * 0.9;
   col = mix(col, vec3(1.0), centerFlash * 0.55);
 
   outColor = vec4(col, 1.0);
