@@ -9,7 +9,7 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     trace: 'off',
     launchOptions: {
-      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ?? '/tmp/chromium',
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
       args: ['--no-sandbox', '--disable-gpu'],
     },
   },
