@@ -653,6 +653,23 @@ a.card:hover {
   margin-top: 0;
 }
 
+.lab__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.button--ghost:hover {
+  border-color: var(--text);
+  background: var(--surface);
+}
+
 /* ---------- Footer ---------- */
 
 .site-footer {

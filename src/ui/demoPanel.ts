@@ -94,6 +94,7 @@ export class DemoPanel {
       <label class="demo-dock__label" for="transition-mode-select">Mode</label>
       <select class="demo-dock__select" id="transition-mode-select" name="transition-mode" aria-label="Transition effect"></select>
       <button type="button" class="demo-dock__btn demo-dock__btn--accent" data-dock-toggle>Switch</button>
+      <button type="button" class="demo-dock__btn" data-picker-open title="Picker (P)">Picker</button>
       <button type="button" class="demo-dock__btn" data-dock-open title="Open controls (D)">Controls</button>
     `;
 
@@ -159,7 +160,7 @@ export class DemoPanel {
           <button type="button" class="demo-panel__copy-btn" data-copy>Copy</button>
         </div>
       </div>
-      <p class="demo-panel__keys"><kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> / <kbd>M</kbd> mode · <kbd>T</kbd> switch · <kbd>R</kbd> replay · <kbd>D</kbd> panel</p>
+      <p class="demo-panel__keys"><kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> / <kbd>M</kbd> mode · <kbd>T</kbd> switch · <kbd>R</kbd> replay · <kbd>D</kbd> panel · <kbd>P</kbd> picker</p>
     `;
 
     // Panel is English inside a French page; declare its language for assistive tech.
